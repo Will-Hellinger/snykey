@@ -11,6 +11,8 @@ services:
       - OPENBAO_TOKEN=${OPENBAO_TOKEN}
     volumes:
       - ./.container_volumes/app/logs:/snyk_credentials_manager/logs:rw
+      - ./.container_volumes/certs/app:/snyk_credentials_manager/certs:rw
+      - ./.container_volumes/certs/ca:/snyk_credentials_manager/certs/ca:rw
     depends_on:
       - openbao
   

@@ -34,10 +34,10 @@ chmod -R 755 "$vol"
 [ -f "$config_dst" ] && chmod 644 "$config_dst"
 
 # Generate certificates
-if [ -x "$dir/generate_certs.sh" ]; then
-    "$dir/generate_certs.sh"
+if [ -x "$dir/generate_certificates.sh" ]; then
+    "$dir/generate_certificates.sh"
 else
-    echo "Warning: generate_certs.sh not found or not executable." >&2
+    echo "Warning: generate_certificates.sh not found or not executable." >&2
 fi
 
 echo "All setup steps completed."

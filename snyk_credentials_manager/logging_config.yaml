@@ -1,0 +1,25 @@
+version: 1
+formatters:
+  default:
+    format: "%(levelname)s %(asctime)s %(message)s"
+handlers:
+  file:
+    class: logging.FileHandler
+    formatter: default
+    filename: /snyk_credentials_manager/logs/uvicorn.log
+loggers:
+  uvicorn:
+    handlers: [file]
+    level: INFO
+    propagate: no
+  uvicorn.error:
+    handlers: [file]
+    level: INFO
+    propagate: no
+  uvicorn.access:
+    handlers: [file]
+    level: INFO
+    propagate: no
+root:
+  handlers: [file]
+  level: INFO
