@@ -1,0 +1,36 @@
+---
+version: "3.8"
+
+services:
+  snyk-credentials-manager:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENBAO_ADDR=${OPENBAO_ADDR}
+      - OPENBAO_TOKEN=${OPENBAO_TOKEN}
+    volumes:
+      - ./.container_volumes/app/logs:/snyk_credentials_manager/logs:rw
+    depends_on:
+      - openbao
+  
+  openbao:
+    image: "openbao/openbao:latest"
+    container_name: openbao
+    ports:
+      - "8200:8200"
+    environment:
+      - OPENBAO_ENV=development
+      - BAO_ADDR=https://127.0.0.1:8200
+      - BAO_API_ADDR=https://127.0.0.1:8200
+      - BAO_CACERT=/certs/ca/ca.crt
+      - BAO_TOKEN=${OPENBAO_TOKEN}
+      - MPS_BAO_TOKEN=${OPENBAO_TOKEN}
+      - RPS_BAO_TOKEN=${OPENBAO_TOKEN}
+      - MPS_SECRETS_PATH="kv/data"
+      - RPS_SECRETS_PATH="kv/data"
+    volumes:
+      - ./.container_volumes/openbao:/bao:rw
+      - ./.container_volumes/certs/bao:/certs:rw
+      - ./.container_volumes/certs/ca:/certs/ca:rw
+    entrypoint: bao server -config /bao/config/config.hcl

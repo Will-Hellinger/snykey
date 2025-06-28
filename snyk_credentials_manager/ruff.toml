@@ -1,0 +1,11 @@
+exclude = [
+    "__pycache__"
+]
+
+target-version = "py313"
+line-length = 88
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
