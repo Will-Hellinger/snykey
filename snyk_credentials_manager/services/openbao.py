@@ -1,12 +1,28 @@
 import hvac
 from core.config import settings
 
-OPENBAO_ADDR = settings.OPENBAO_ADDR
-OPENBAO_TOKEN = settings.OPENBAO_TOKEN
+OPENBAO_ADDR: str = settings.OPENBAO_ADDR
+OPENBAO_TOKEN: str = settings.OPENBAO_TOKEN
 
-client: hvac.Client = hvac.Client(url=OPENBAO_ADDR, token=OPENBAO_TOKEN, verify=False)
+client: hvac.Client = hvac.Client(
+    url=OPENBAO_ADDR, token=OPENBAO_TOKEN, verify=False
+)  # Disable SSL verification for local testing
 
-SECRET_MOUNT_POINT = "kv"  # Default mount point for Vault KV secrets engine
+SECRET_MOUNT_POINT: str = "kv"  # Default mount point for Vault KV secrets engine
+
+
+def check_vault_sealed() -> bool:
+    """
+    Checks if the Vault is sealed.
+
+    Returns:
+        bool: True if Vault is sealed, False otherwise.
+    """
+
+    try:
+        return client.sys.is_sealed()
+    except hvac.exceptions.InvalidRequest as e:
+        raise RuntimeError(f"Failed to check Vault seal status: {str(e)}")
 
 
 def _vault_path(org_id: str, client_id: str) -> str:
@@ -42,11 +58,14 @@ def store_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
 
     path: str = _vault_path(org_id, client_id)
 
-    client.secrets.kv.v2.create_or_update_secret(
-        path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
-        secret={"refresh_key": refresh_key},
-        mount_point=SECRET_MOUNT_POINT,
-    )
+    try:
+        client.secrets.kv.v2.create_or_update_secret(
+            path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
+            secret={"refresh_key": refresh_key},
+            mount_point=SECRET_MOUNT_POINT,
+        )
+    except Exception as e:
+        return {"message": "Failed to store refresh key.", "error": str(e)}
 
     return {"message": "Refresh key stored."}
 
