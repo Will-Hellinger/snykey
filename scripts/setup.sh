@@ -29,6 +29,16 @@ else
     echo "OpenBao config not found at $config_src" >&2
 fi
 
+echo "Transferring Redis config..."
+config_src="$dir/../configs/redis_config.conf"
+config_dst="$vol/redis/config/redis.conf"
+if [ -f "$config_src" ]; then
+    cp "$config_src" "$config_dst"
+    echo "Redis config copied"
+else
+    echo "Redis config not found at $config_src" >&2
+fi
+
 # Set permissions safely
 chmod -R 755 "$vol"
 [ -f "$config_dst" ] && chmod 644 "$config_dst"

@@ -42,11 +42,14 @@ def store_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
 
     path: str = _vault_path(org_id, client_id)
 
-    client.secrets.kv.v2.create_or_update_secret(
-        path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
-        secret={"refresh_key": refresh_key},
-        mount_point=SECRET_MOUNT_POINT,
-    )
+    try:
+        client.secrets.kv.v2.create_or_update_secret(
+            path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
+            secret={"refresh_key": refresh_key},
+            mount_point=SECRET_MOUNT_POINT,
+        )
+    except Exception as e:
+        return {"message": "Failed to store refresh key.", "error": str(e)}
 
     return {"message": "Refresh key stored."}
 
