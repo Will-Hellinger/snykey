@@ -10,7 +10,9 @@ router: APIRouter = APIRouter()
 
 
 @router.put("/credentials")
-def store_credentials(org_id: str, client_id: str, client_secret: str, refresh_key: str) -> JSONResponse:
+def store_credentials(
+    org_id: str, client_id: str, client_secret: str, refresh_key: str
+) -> JSONResponse:
     """
     Store Snyk credentials in OpenBao.
 
@@ -32,9 +34,7 @@ def store_credentials(org_id: str, client_id: str, client_secret: str, refresh_k
 
     logger.info("Refreshing key to ensure no other process can use it.")
     try:
-        result: dict = snyk.refresh_snyk_token(
-            client_id, client_secret, refresh_key
-        )
+        result: dict = snyk.refresh_snyk_token(client_id, client_secret, refresh_key)
 
         logger.info(
             "Successfully refreshed Snyk token for org_id: %s, client_id: %s",
@@ -100,9 +100,7 @@ def get_credentials(org_id: str, client_id: str, client_secret: str) -> JSONResp
         "Refreshing Snyk token for org_id: %s, client_id: %s", org_id, client_id
     )
     try:
-        result: dict = snyk.refresh_snyk_token(
-            client_id, client_secret, refresh_key
-        )
+        result: dict = snyk.refresh_snyk_token(client_id, client_secret, refresh_key)
 
         logger.info(
             "Successfully refreshed Snyk token for org_id: %s, client_id: %s",
