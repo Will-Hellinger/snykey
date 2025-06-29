@@ -44,7 +44,7 @@ def store_auth_token(
     return {"message": "Auth token stored."}
 
 
-def get_auth_token(org_id: str, client_id: str) -> str | None:
+def get_auth_token(org_id: str, client_id: str) -> bytes | None:
     """
     Retrieves the Snyk auth token for the specified org/client from Redis.
 
@@ -53,7 +53,7 @@ def get_auth_token(org_id: str, client_id: str) -> str | None:
         client_id (str): The client ID.
 
     Returns:
-        str | None: The Snyk auth token if found, otherwise None.
+        bytes | None: The Snyk auth token if found, otherwise None.
     """
 
     key: str = format_key(org_id, client_id)

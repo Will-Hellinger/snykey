@@ -91,7 +91,7 @@ def get_refresh_key(org_id: str, client_id: str) -> str | None:
         )
 
         return secret["data"]["data"].get("refresh_key")
-    except hvac.exceptions.InvalidPath:
+    except Exception:
         return None
 
 

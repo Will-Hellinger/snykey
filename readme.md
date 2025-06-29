@@ -16,6 +16,18 @@ The Snyk Credentials Manager is a secure service for managing and distributing S
 - The manager retrieves and refreshes tokens as needed, using securely stored refresh keys
 - All secrets are stored in OpenBao, ensuring strong security and auditability
 
+## Running Tests
+
+1. **Install test dependencies:**
+   ```bash
+   pip install -r ./tests/requirements.txt
+   ```
+
+2. **Run the test suite:**
+   ```bash
+   pytest
+   ```
+
 ---
 
 # OpenBao Setup
