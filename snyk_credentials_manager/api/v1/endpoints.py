@@ -24,7 +24,7 @@ def store_credentials(org_id: str, client_id: str, client_secret: str, refresh_k
         JSONResponse: A response indicating success or failure.
     """
 
-    if not openbao.check_vault_sealed():
+    if openbao.check_vault_sealed():
         return JSONResponse(
             status_code=503,
             content={"error": "Vault is sealed, cannot store credentials."},
