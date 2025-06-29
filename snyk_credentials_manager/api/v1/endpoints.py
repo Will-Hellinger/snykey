@@ -1,7 +1,11 @@
 from logging import getLogger, Logger
-from fastapi import APIRouter, status
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from models.schema import CredentialsRequest
+from models.schema import (
+    StoreCredentialRequest,
+    GetCredentialRequest,
+    DeleteCredentialRequest,
+)
 from services import openbao, snyk, redis
 from core.config import settings
 
@@ -10,25 +14,17 @@ logger: Logger = getLogger(__name__)
 router: APIRouter = APIRouter()
 
 
-@router.post("/store_credentials", status_code=status.HTTP_201_CREATED)
-def store_credentials(req: CredentialsRequest) -> JSONResponse:
+@router.put("/credentials")
+def store_credentials(req: StoreCredentialRequest) -> JSONResponse:
     """
     Store Snyk credentials in OpenBao.
 
     Args:
-        req (CredentialsRequest): The request containing org_id, client_id, and refresh_key.
+        req (StoreCredentialRequest): The request containing org_id, client_id, and refresh_key.
 
     Returns:
         JSONResponse: A response indicating success or failure.
     """
-
-    if not req.refresh_key:
-        return JSONResponse(status_code=400, content={"error": "refresh_key required"})
-
-    if not req.org_id or not req.client_id:
-        return JSONResponse(
-            status_code=400, content={"error": "org_id and client_id are required"}
-        )
 
     if not openbao.check_vault_sealed():
         return JSONResponse(
@@ -36,27 +32,38 @@ def store_credentials(req: CredentialsRequest) -> JSONResponse:
             content={"error": "Vault is sealed, cannot store credentials."},
         )
 
+    logger.info("Refreshing key to ensure no other process can use it.")
+    try:
+        result: dict = snyk.refresh_snyk_token(
+            req.client_id, req.client_secret, req.refresh_key
+        )
+
+        logger.info(
+            "Successfully refreshed Snyk token for org_id: %s, client_id: %s",
+            req.org_id,
+            req.client_id,
+        )
+        openbao.store_refresh_key(req.org_id, req.client_id, result["refresh_token"])
+    except Exception as e:
+        logger.error("Failed to refresh Snyk token: %s", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
     openbao.store_refresh_key(req.org_id, req.client_id, req.refresh_key)
 
     return JSONResponse(content={"message": "Credentials stored."})
 
 
-@router.post("/gather_credentials")
-def gather_credentials(req: CredentialsRequest) -> JSONResponse:
+@router.get("/credentials")
+def get_credentials(req: GetCredentialRequest) -> JSONResponse:
     """
     Gather Snyk credentials using the provided org_id and client_id.
 
     Args:
-        req (CredentialsRequest): The request containing org_id and client_id.
+        req (GetCredentialRequest): The request containing org_id and client_id.
 
     Returns:
         JSONResponse: A response containing the gathered credentials or an error message.
     """
-
-    if not req.org_id or not req.client_id:
-        return JSONResponse(
-            status_code=400, content={"error": "org_id and client_id are required"}
-        )
 
     # Check if auth token exists in Redis
     logger.info(
@@ -98,6 +105,13 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
         result: dict = snyk.refresh_snyk_token(
             req.client_id, req.client_secret, refresh_key
         )
+
+        logger.info(
+            "Successfully refreshed Snyk token for org_id: %s, client_id: %s",
+            req.org_id,
+            req.client_id,
+        )
+        openbao.update_refresh_key(req.org_id, req.client_id, result["refresh_token"])
     except Exception as e:
         logger.error("Failed to refresh Snyk token: %s", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -113,20 +127,11 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
         logger.error("Failed to store auth token in Redis: %s", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-    # Update refresh key in openbao
-    logger.info(
-        "Updating refresh key in OpenBao for org_id: %s, client_id: %s",
-        req.org_id,
-        req.client_id,
-    )
-
-    openbao.update_refresh_key(req.org_id, req.client_id, result["refresh_token"])
-
     return JSONResponse(content={"access_token": str(result["access_token"])})
 
 
-@router.post("/delete_credentials")
-def delete_credentials(req: CredentialsRequest) -> JSONResponse:
+@router.delete("/credentials")
+def delete_credentials(req: DeleteCredentialRequest) -> JSONResponse:
     """
     Delete Snyk credentials for a given org_id and client_id.
 
@@ -156,19 +161,18 @@ def delete_credentials(req: CredentialsRequest) -> JSONResponse:
     return JSONResponse(content={"message": "Credentials deleted."})
 
 
-@router.get("/drop_cache_key")
-def drop_cache_key(org_id: str, client_id: str) -> JSONResponse:
+@router.delete("/cache")
+def delete_cache_key(req: DeleteCredentialRequest) -> JSONResponse:
     """
     Deletes the Snyk auth token for the specified org/client from Redis.
 
     Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
+        req (DeleteCredentialRequest): The request containing org_id and client_id.
 
     Returns:
         JSONResponse: A confirmation message indicating the auth token was deleted.
     """
 
-    response = redis.delete_auth_token(org_id, client_id)
+    response: dict = redis.delete_auth_token(req.org_id, req.client_id)
 
     return JSONResponse(content=response)

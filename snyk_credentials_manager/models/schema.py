@@ -1,19 +1,49 @@
 from pydantic import BaseModel
 
 
-class CredentialsRequest(BaseModel):
+class StoreCredentialRequest(BaseModel):
     """
-    Request model for Snyk credentials operations.
+    Request model for storing Snyk credentials.
 
     Attributes:
         org_id (str): The organization ID.
         client_id (str): The client ID.
-        client_secret (str): The client secret.
-        refresh_key (str, optional): The refresh key for storing credentials.
+        client_secret (str): The client secret for authentication.
+        refresh_key (str): The refresh key for storing credentials.
 
     """
 
     org_id: str
     client_id: str
     client_secret: str
-    refresh_key: str | None = None  # Optional for storing credentials
+    refresh_key: str
+
+
+class GetCredentialRequest(BaseModel):
+    """
+    Request model for retrieving Snyk credentials.
+
+    Attributes:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+        client_secret (str): The client secret for authentication.
+
+    """
+
+    org_id: str
+    client_id: str
+    client_secret: str
+
+
+class DeleteCredentialRequest(BaseModel):
+    """
+    Request model for deleting Snyk credentials.
+
+    Attributes:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+
+    """
+
+    org_id: str
+    client_id: str
