@@ -6,6 +6,7 @@ WORKDIR /snyk_credentials_manager
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt uvicorn pyyaml; \
+    rm requirements.txt; \
     mkdir -p /snyk_credentials_manager/logs \
     /snyk_credentials_manager/certs \
     /snyk_credentials_manager/certs/ca

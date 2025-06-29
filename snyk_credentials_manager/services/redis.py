@@ -84,3 +84,23 @@ def delete_auth_token(org_id: str, client_id: str) -> dict:
     redis_client.delete(key)
 
     return {"message": "Auth token deleted."}
+
+
+def check_token_age(org_id: str, client_id: str) -> int | None:
+    """
+    Checks the age of the Snyk auth token for the specified org/client in Redis.
+
+    Args:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+
+    Returns:
+        int | None: The age of the auth token in seconds if found, otherwise None.
+    """
+
+    key: str = format_key(org_id, client_id)
+
+    if not redis_client.exists(key):
+        return None
+
+    return redis_client.ttl(key)

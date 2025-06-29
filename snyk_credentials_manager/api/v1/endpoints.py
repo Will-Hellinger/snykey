@@ -3,6 +3,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from models.schema import CredentialsRequest
 from services import openbao, snyk, redis
+from core.config import settings
 
 logger: Logger = getLogger(__name__)
 
@@ -24,6 +25,17 @@ def store_credentials(req: CredentialsRequest) -> JSONResponse:
     if not req.refresh_key:
         return JSONResponse(status_code=400, content={"error": "refresh_key required"})
 
+    if not req.org_id or not req.client_id:
+        return JSONResponse(
+            status_code=400, content={"error": "org_id and client_id are required"}
+        )
+
+    if not openbao.check_vault_sealed():
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Vault is sealed, cannot store credentials."},
+        )
+
     openbao.store_refresh_key(req.org_id, req.client_id, req.refresh_key)
 
     return JSONResponse(content={"message": "Credentials stored."})
@@ -41,18 +53,9 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
         JSONResponse: A response containing the gathered credentials or an error message.
     """
 
-    # Get refresh key from OpenBao
-    logger.info(
-        "Gathering Snyk credentials for org_id: %s, client_id: %s",
-        req.org_id,
-        req.client_id,
-    )
-
-    refresh_key: str | None = openbao.get_refresh_key(req.org_id, req.client_id)
-
-    if not refresh_key:
+    if not req.org_id or not req.client_id:
         return JSONResponse(
-            status_code=404, content={"error": "No refresh key found for org/client"}
+            status_code=400, content={"error": "org_id and client_id are required"}
         )
 
     # Check if auth token exists in Redis
@@ -71,10 +74,20 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
 
     if auth_token:
         logger.info("Found auth token in Redis")
+        return JSONResponse(content={"access_token": str(auth_token.decode())})
+
+    # Get refresh key from OpenBao
+    logger.info(
+        "Gathering Snyk credentials for org_id: %s, client_id: %s",
+        req.org_id,
+        req.client_id,
+    )
+
+    refresh_key: str | None = openbao.get_refresh_key(req.org_id, req.client_id)
+
+    if not refresh_key:
         return JSONResponse(
-            content={
-                "access_token": str(auth_token.decode())
-            }
+            status_code=404, content={"error": "No refresh key found for org/client"}
         )
 
     # Refresh Snyk token
@@ -94,7 +107,7 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
             req.org_id,
             req.client_id,
             str(result["access_token"]),
-            expiration=int(result["expires_in"]) - 60,  # Subtract 60 seconds for safety
+            expiration=settings.REDIS_CACHE_TIME * 60,
         )
     except Exception as e:
         logger.error("Failed to store auth token in Redis: %s", e)
@@ -109,11 +122,7 @@ def gather_credentials(req: CredentialsRequest) -> JSONResponse:
 
     openbao.update_refresh_key(req.org_id, req.client_id, result["refresh_token"])
 
-    return JSONResponse(
-        content={
-            "access_token": str(result["access_token"])
-        }
-    )
+    return JSONResponse(content={"access_token": str(result["access_token"])})
 
 
 @router.post("/delete_credentials")
@@ -145,3 +154,21 @@ def delete_credentials(req: CredentialsRequest) -> JSONResponse:
     openbao.delete_refresh_key(req.org_id, req.client_id)
 
     return JSONResponse(content={"message": "Credentials deleted."})
+
+
+@router.get("/drop_cache_key")
+def drop_cache_key(org_id: str, client_id: str) -> JSONResponse:
+    """
+    Deletes the Snyk auth token for the specified org/client from Redis.
+
+    Args:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+
+    Returns:
+        JSONResponse: A confirmation message indicating the auth token was deleted.
+    """
+
+    response = redis.delete_auth_token(org_id, client_id)
+
+    return JSONResponse(content=response)

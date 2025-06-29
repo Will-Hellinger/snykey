@@ -7,11 +7,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OPENBAO_ADDR=openbao:8200
+      - OPENBAO_ADDR=https://openbao:8200
       - OPENBAO_TOKEN=${OPENBAO_TOKEN}
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_CACHE_TIME=${REDIS_CACHE_TIME}
     volumes:
       - ./.container_volumes/app/logs:/snyk_credentials_manager/logs:rw
       - ./.container_volumes/certs/app:/snyk_credentials_manager/certs:rw

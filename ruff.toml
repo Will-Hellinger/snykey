@@ -1,5 +1,7 @@
 exclude = [
-    "__pycache__"
+    "__pycache__",
+    ".container_volumes",
+    ".venv",
 ]
 
 target-version = "py313"
