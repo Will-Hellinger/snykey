@@ -59,7 +59,7 @@ def test_store_credentials_success(monkeypatch, store_req):
     """
 
     # Patch all external calls
-    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: True)
+    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: False)
     monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.snyk.refresh_snyk_token", lambda cid, cs, rk: {"access_token": "token", "refresh_token": "refresh", "expires_in": 3600})
     monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.store_refresh_key", lambda o, c, r: None)
 
@@ -77,7 +77,7 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
         store_req: The request data for storing credentials.
     """
 
-    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: False)
+    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: True)
 
     response = client.put("/credentials", params=store_req)
 
@@ -93,7 +93,7 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         store_req: The request data for storing credentials.
     """
 
-    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: True)
+    monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed", lambda: False)
     monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.snyk.refresh_snyk_token", lambda cid, cs, rk: (_ for _ in ()).throw(Exception("fail")))
 
     response = client.put("/credentials", params=store_req)
@@ -188,6 +188,6 @@ def test_delete_cache_key(monkeypatch, delete_req):
     monkeypatch.setattr("snyk_credentials_manager.api.v1.endpoints.redis.delete_auth_token", lambda o, c: {"message": "Deleted"})
 
     response = client.delete("/cache", params=delete_req)
-    
+
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
