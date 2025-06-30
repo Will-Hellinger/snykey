@@ -1,6 +1,6 @@
 # Configuration
 
-The Snyk Credentials Manager is highly configurable to fit a variety of deployment environments. Below are the main configuration options you can adjust to suit your needs.
+Snykey is highly configurable to fit a variety of deployment environments. Below are the main configuration options you can adjust to suit your needs.
 
 ## Environment Variables
 

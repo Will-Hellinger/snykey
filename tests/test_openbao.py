@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from snyk_credentials_manager.services import openbao
+from services import openbao
 
 
 @pytest.fixture

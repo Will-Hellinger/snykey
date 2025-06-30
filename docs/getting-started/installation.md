@@ -1,14 +1,14 @@
 # Installation
 
-Follow these steps to install and set up the Snyk Credentials Manager.
+Follow these steps to install and set up Snykey.
 
 ---
 
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Will-Hellinger/snyk-credentials-manager.git
-cd snyk-credentials-manager
+git clone https://github.com/Will-Hellinger/snykey.git
+cd snykey
 ```
 
 ## 2. Prepare Configuration

@@ -1,12 +1,12 @@
-# Snyk Credentials Manager Documentation
+# Snykey Documentation
 
-Welcome to the documentation for **Snyk Credentials Manager**!
+Welcome to the documentation for **Snykey**!
 
 ![image](./images/logo-half.png)
 
-## What is Snyk Credentials Manager?
+## What is Snykey?
 
-Snyk Credentials Manager is a centralized service for managing and distributing Snyk API credentials to your applications.  
+Snykey is a centralized service for managing and distributing Snyk API credentials to your applications.  
 It ensures your software always has access to valid Snyk access tokens, while securely storing and rotating refresh keys using OpenBao (Vault).  
 This removes the persistence and secrets management burden from your application code.
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Python script automates the initial setup for the Snyk Credentials Manager project. It creates the required directory structure and copies configuration files for OpenBao and Redis into the appropriate locations under `.container_volumes`. This prepares your environment for running the stack with Docker Compose.
+This Python script automates the initial setup for Snykey. It creates the required directory structure and copies configuration files for OpenBao and Redis into the appropriate locations under `.container_volumes`. This prepares your environment for running the stack with Docker Compose.
 
 ## Features
 

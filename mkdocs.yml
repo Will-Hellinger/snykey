@@ -1,5 +1,5 @@
-site_name: "Snyk Credentials Manager Developer Docs"
-site_description: "Documentation for Snyk Credentials Manager"
+site_name: "Snykey Developer Docs"
+site_description: "Documentation for Snykey"
 theme:
   name: material
   palette:
@@ -53,7 +53,7 @@ plugins:
       default_handler: python
       handlers:
         python:
-          paths: ["snyk_credentials_manager"]
+          paths: ["snykey"]
           options:
             heading_level: 3
             show_source: true

@@ -1,7 +1,7 @@
 import coverage
 
 cov: coverage.Coverage = coverage.Coverage(
-    source=["snyk_credentials_manager"], omit=["__init__.py", "*/tests/*"]
+    source=["snykey"], omit=["__init__.py", "*/tests/*"]
 )
 
 

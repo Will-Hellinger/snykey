@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from snyk_credentials_manager.services import snyk
+from services import snyk
 
 
 def test_refresh_snyk_token_success():
@@ -17,7 +17,7 @@ def test_refresh_snyk_token_success():
     mock_response.raise_for_status.return_value = None
 
     with patch(
-        "snyk_credentials_manager.services.snyk.requests.post",
+        "services.snyk.requests.post",
         return_value=mock_response,
     ) as mock_post:
         result: dict = snyk.refresh_snyk_token("cid", "csecret", "rtoken")
@@ -58,7 +58,7 @@ def test_refresh_snyk_token_http_error():
     mock_response.raise_for_status.side_effect = Exception("HTTP error")
 
     with patch(
-        "snyk_credentials_manager.services.snyk.requests.post",
+        "services.snyk.requests.post",
         return_value=mock_response,
     ):
         with pytest.raises(Exception) as excinfo:

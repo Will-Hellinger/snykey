@@ -6,7 +6,7 @@ handlers:
   file:
     class: logging.FileHandler
     formatter: default
-    filename: /snyk_credentials_manager/logs/uvicorn.log
+    filename: /snykey/logs/uvicorn.log
 loggers:
   uvicorn:
     handlers: [file]
