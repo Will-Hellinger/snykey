@@ -4,6 +4,8 @@ Welcome to the documentation for **Snykey**!
 
 ![image](./images/logo-half.png)
 
+[![Art by @stawbeby](https://img.shields.io/badge/Art%20by-%40stawbeby-indigo?style=for-the-badge&logo=instagram)](https://www.instagram.com/stawbeby/profilecard)
+
 ## What is Snykey?
 
 Snykey is a centralized service for managing and distributing Snyk API credentials to your applications.  
