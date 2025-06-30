@@ -1,5 +1,9 @@
 # Snyk Credentials Manager
 
+![image](./docs/images/logo-half.png)
+
+[![Art by @stawbeby](https://img.shields.io/badge/Art%20by-%40stawbeby-indigo?style=for-the-badge&logo=instagram)](https://www.instagram.com/stawbeby/profilecard)
+
 MAJOR Work in Progress! Things will break and change a lot!
 
 The Snyk Credentials Manager is a secure service for managing and distributing Snyk API credentials to your applications. It ensures that your software always has access to valid Snyk access tokens, while securely storing and automatically rotating refresh keys using OpenBao. Taking the persistence requirement off of your project!
