@@ -1,4 +1,4 @@
-# Snyk Credentials Manager
+# Snykey
 
 ![image](./docs/images/logo-half.png)
 
@@ -6,7 +6,7 @@
 
 MAJOR Work in Progress! Things will break and change a lot!
 
-The Snyk Credentials Manager is a secure service for managing and distributing Snyk API credentials to your applications. It ensures that your software always has access to valid Snyk access tokens, while securely storing and automatically rotating refresh keys using OpenBao. Taking the persistence requirement off of your project!
+Snykey is a secure service for managing and distributing Snyk API credentials to your applications. It ensures that your software always has access to valid Snyk access tokens, while securely storing and automatically rotating refresh keys using OpenBao. Taking the persistence requirement off of your project!
 
 ## Features
 - Centralized management of Snyk API credentials
@@ -36,7 +36,7 @@ The Snyk Credentials Manager is a secure service for managing and distributing S
 
 # OpenBao Setup
 
-The following steps will help you initialize and configure OpenBao for use with the Snyk Credentials Manager.
+The following steps will help you initialize and configure OpenBao for use with Snykey.
 
 ## 1. Initialize OpenBao
 Run the following command to initialize OpenBao:
@@ -94,5 +94,5 @@ docker exec -it openbao bao secrets enable -version=2 kv
 ---
 
 # Next Steps
-- Use the Snyk Credentials Manager API to store and retrieve Snyk credentials for your applications.
+- Use the Snykey API to store and retrieve Snyk credentials for your applications.
 - Ensure your applications are configured to request credentials from this service, not directly from Snyk.

@@ -2,7 +2,7 @@
 version: "3.8"
 
 services:
-  snyk-credentials-manager:
+  snykey:
     build: .
     ports:
       - "8000:8000"
@@ -14,9 +14,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_CACHE_TIME=${REDIS_CACHE_TIME}
     volumes:
-      - ./.container_volumes/app/logs:/snyk_credentials_manager/logs:rw
-      - ./.container_volumes/certs/app:/snyk_credentials_manager/certs:rw
-      - ./.container_volumes/certs/ca:/snyk_credentials_manager/certs/ca:rw
+      - ./.container_volumes/app/logs:/snykey/logs:rw
+      - ./.container_volumes/certs/app:/snykey/certs:rw
+      - ./.container_volumes/certs/ca:/snykey/certs/ca:rw
     depends_on:
       - openbao
       - redis

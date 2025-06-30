@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from snyk_credentials_manager.main import app
+from main import app
 
 client = TestClient(app)
 
@@ -57,11 +57,11 @@ def test_store_credentials_success(monkeypatch, store_req):
 
     # Patch all external calls
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed",
+        "api.v1.endpoints.openbao.check_vault_sealed",
         lambda: False,
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.snyk.refresh_snyk_token",
+        "api.v1.endpoints.snyk.refresh_snyk_token",
         lambda cid, cs, rk: {
             "access_token": "token",
             "refresh_token": "refresh",
@@ -69,7 +69,7 @@ def test_store_credentials_success(monkeypatch, store_req):
         },
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.store_refresh_key",
+        "api.v1.endpoints.openbao.store_refresh_key",
         lambda o, c, r: None,
     )
 
@@ -89,7 +89,7 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed",
+        "api.v1.endpoints.openbao.check_vault_sealed",
         lambda: True,
     )
 
@@ -109,11 +109,11 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.check_vault_sealed",
+        "api.v1.endpoints.openbao.check_vault_sealed",
         lambda: False,
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.snyk.refresh_snyk_token",
+        "api.v1.endpoints.snyk.refresh_snyk_token",
         lambda cid, cs, rk: (_ for _ in ()).throw(Exception("fail")),
     )
 
@@ -133,7 +133,7 @@ def test_get_credentials_from_redis(monkeypatch, get_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.redis.get_auth_token",
+        "api.v1.endpoints.redis.get_auth_token",
         lambda o, c: b"token",
     )
 
@@ -153,11 +153,11 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.redis.get_auth_token",
+        "api.v1.endpoints.redis.get_auth_token",
         lambda o, c: None,
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.get_refresh_key",
+        "api.v1.endpoints.openbao.get_refresh_key",
         lambda o, c: None,
     )
 
@@ -176,15 +176,15 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.redis.get_auth_token",
+        "api.v1.endpoints.redis.get_auth_token",
         lambda o, c: None,
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.get_refresh_key",
+        "api.v1.endpoints.openbao.get_refresh_key",
         lambda o, c: "refresh1",
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.snyk.refresh_snyk_token",
+        "api.v1.endpoints.snyk.refresh_snyk_token",
         lambda cid, cs, rk: (_ for _ in ()).throw(Exception("fail")),
     )
 
@@ -203,11 +203,11 @@ def test_delete_credentials_success(monkeypatch, delete_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.redis.delete_auth_token",
+        "api.v1.endpoints.redis.delete_auth_token",
         lambda o, c: None,
     )
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.openbao.delete_refresh_key",
+        "api.v1.endpoints.openbao.delete_refresh_key",
         lambda o, c: None,
     )
 
@@ -237,7 +237,7 @@ def test_delete_cache_key(monkeypatch, delete_req):
     """
 
     monkeypatch.setattr(
-        "snyk_credentials_manager.api.v1.endpoints.redis.delete_auth_token",
+        "api.v1.endpoints.redis.delete_auth_token",
         lambda o, c: {"message": "Deleted"},
     )
 

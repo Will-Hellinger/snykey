@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from snyk_credentials_manager.services import redis as redis_service
+from services import redis as redis_service
 
 
 @pytest.fixture

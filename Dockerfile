@@ -1,18 +1,18 @@
 FROM python:3.13-alpine
 
-COPY snyk_credentials_manager /snyk_credentials_manager
+COPY snykey /snykey
 
-WORKDIR /snyk_credentials_manager
+WORKDIR /snykey
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt uvicorn pyyaml; \
     rm requirements.txt; \
-    mkdir -p /snyk_credentials_manager/logs \
-    /snyk_credentials_manager/certs \
-    /snyk_credentials_manager/certs/ca
+    mkdir -p /snykey/logs \
+    /snykey/certs \
+    /snykey/certs/ca
 
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 \
-    --log-config /snyk_credentials_manager/logging_config.yaml \
-    --ssl-keyfile /snyk_credentials_manager/certs/app.key \
-    --ssl-certfile /snyk_credentials_manager/certs/app.crt \
-    --ssl-ca-certs /snyk_credentials_manager/certs/ca/ca.crt > /snyk_credentials_manager/logs/app.log 2>&1"]
+    --log-config /snykey/logging_config.yaml \
+    --ssl-keyfile /snykey/certs/app.key \
+    --ssl-certfile /snykey/certs/app.crt \
+    --ssl-ca-certs /snykey/certs/ca/ca.crt > /snykey/logs/app.log 2>&1"]
