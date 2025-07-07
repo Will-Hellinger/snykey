@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+import asyncio
 
 client = TestClient(app)
 
@@ -13,7 +14,7 @@ def store_req() -> dict:
     Returns:
         dict: A dictionary containing organization ID, client ID, client secret, and refresh key.
     """
-
+    
     return {
         "org_id": "org1",
         "client_id": "client1",
@@ -42,7 +43,7 @@ def delete_req() -> dict:
     Returns:
         dict: A dictionary containing organization ID and client ID.
     """
-
+    
     return {"org_id": "org1", "client_id": "client1"}
 
 
@@ -55,22 +56,26 @@ def test_store_credentials_success(monkeypatch, store_req):
         store_req: The request data for storing credentials.
     """
 
-    # Patch all external calls
+    # Patch all external calls with async mocks
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
         lambda: False,
     )
-    monkeypatch.setattr(
-        "api.v1.endpoints.snyk.refresh_snyk_token",
-        lambda cid, cs, rk: {
+    async def async_refresh_snyk_token(cid, cs, rk):
+        return {
             "access_token": "token",
             "refresh_token": "refresh",
             "expires_in": 3600,
-        },
+        }
+    monkeypatch.setattr(
+        "api.v1.endpoints.snyk.refresh_snyk_token",
+        async_refresh_snyk_token,
     )
+    async def async_store_refresh_key(o, c, r):
+        return None
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.store_refresh_key",
-        lambda o, c, r: None,
+        async_store_refresh_key,
     )
 
     response = client.put("/credentials", params=store_req)
@@ -112,9 +117,11 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         "api.v1.endpoints.openbao.check_vault_sealed",
         lambda: False,
     )
+    async def async_refresh_snyk_token(cid, cs, rk):
+        raise Exception("fail")
     monkeypatch.setattr(
         "api.v1.endpoints.snyk.refresh_snyk_token",
-        lambda cid, cs, rk: (_ for _ in ()).throw(Exception("fail")),
+        async_refresh_snyk_token,
     )
 
     response = client.put("/credentials", params=store_req)
@@ -132,9 +139,11 @@ def test_get_credentials_from_redis(monkeypatch, get_req):
         get_req: The request data for getting credentials.
     """
 
+    async def async_get_auth_token(o, c):
+        return b"token"
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
-        lambda o, c: b"token",
+        async_get_auth_token,
     )
 
     response = client.get("/credentials", params=get_req)
@@ -152,9 +161,11 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
         get_req: The request data for getting credentials.
     """
 
+    async def async_get_auth_token(o, c):
+        return None
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
-        lambda o, c: None,
+        async_get_auth_token,
     )
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
@@ -175,17 +186,21 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         get_req: The request data for getting credentials.
     """
 
+    async def async_get_auth_token(o, c):
+        return None
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
-        lambda o, c: None,
+        async_get_auth_token,
     )
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
         lambda o, c: "refresh1",
     )
+    async def async_refresh_snyk_token(cid, cs, rk):
+        raise Exception("fail")
     monkeypatch.setattr(
         "api.v1.endpoints.snyk.refresh_snyk_token",
-        lambda cid, cs, rk: (_ for _ in ()).throw(Exception("fail")),
+        async_refresh_snyk_token,
     )
 
     response = client.get("/credentials", params=get_req)
@@ -202,9 +217,11 @@ def test_delete_credentials_success(monkeypatch, delete_req):
         delete_req: The request data for deleting credentials.
     """
 
+    async def async_delete_auth_token(o, c):
+        return None
     monkeypatch.setattr(
         "api.v1.endpoints.redis.delete_auth_token",
-        lambda o, c: None,
+        async_delete_auth_token,
     )
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.delete_refresh_key",
@@ -236,9 +253,11 @@ def test_delete_cache_key(monkeypatch, delete_req):
         delete_req: The request data for deleting the cache key.
     """
 
+    async def async_delete_auth_token(o, c):
+        return {"message": "Deleted"}
     monkeypatch.setattr(
         "api.v1.endpoints.redis.delete_auth_token",
-        lambda o, c: {"message": "Deleted"},
+        async_delete_auth_token,
     )
 
     response = client.delete("/cache", params=delete_req)

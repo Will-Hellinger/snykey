@@ -2,5 +2,5 @@ fastapi==0.115.14
 hvac==2.3.0
 pydantic==2.11.7
 pydantic_settings==2.10.1
-Requests==2.32.4
+httpx==0.28.1
 redis

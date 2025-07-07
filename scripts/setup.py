@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
+
 def main():
     """
     Main function to set up the directory structure and configuration files.
@@ -62,7 +63,10 @@ def main():
         os.chmod(redis_dst, 0o644)
 
     print("All setup steps completed.")
-    print("You should now run the generate_certs.py script to create the necessary certificates.")
+    print(
+        "You should now run the generate_certs.py script to create the necessary certificates."
+    )
+
 
 if __name__ == "__main__":
     main()
