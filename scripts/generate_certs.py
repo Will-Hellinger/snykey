@@ -166,7 +166,7 @@ def main():
         args.country, args.state, args.city, args.org, args.bao_cn
     )
     bao_sans: list[x509.Name] = parse_sans(args.bao_sans)
-    bao_csr: x509.CertificateSigningRequest = (
+    (
         x509.CertificateSigningRequestBuilder()
         .subject_name(bao_subject)
         .add_extension(SubjectAlternativeName(bao_sans), critical=False)
@@ -205,7 +205,7 @@ def main():
         args.country, args.state, args.city, args.org, args.app_cn
     )
     app_sans: list[x509.Name] = parse_sans(args.app_sans)
-    app_csr: x509.CertificateSigningRequest = (
+    (
         x509.CertificateSigningRequestBuilder()
         .subject_name(app_subject)
         .add_extension(SubjectAlternativeName(app_sans), critical=False)

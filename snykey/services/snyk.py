@@ -1,7 +1,15 @@
-import requests
+import httpx
+
+http_client: httpx.AsyncClient = httpx.AsyncClient(
+    verify=True,
+    timeout=30.0,
+    limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+)
 
 
-def refresh_snyk_token(client_id: str, client_secret: str, refresh_token: str) -> dict:
+async def refresh_snyk_token(
+    client_id: str, client_secret: str, refresh_token: str
+) -> dict:
     """
     Use Snyk OAuth2 endpoint to exchange a refresh token for a new access token and refresh token.
 
@@ -26,12 +34,12 @@ def refresh_snyk_token(client_id: str, client_secret: str, refresh_token: str) -
 
     data: dict[str, str] = {
         "grant_type": "refresh_token",
-        "client_id": f"{str(client_id)}",
-        "client_secret": f"{str(client_secret)}",
-        "refresh_token": f"{str(refresh_token)}",
+        "client_id": str(client_id),
+        "client_secret": str(client_secret),
+        "refresh_token": str(refresh_token),
     }
 
-    resp: requests.Response = requests.post(url, data=data, headers=headers)
+    resp: httpx.Response = await http_client.post(url, data=data, headers=headers)
     resp.raise_for_status()
 
     result: dict = resp.json()

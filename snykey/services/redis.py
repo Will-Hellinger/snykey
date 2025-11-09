@@ -1,7 +1,7 @@
-from redis import Redis
+import redis.asyncio as redis
 from core.config import settings
 
-redis_client: Redis = Redis(
+redis_client: redis.Redis = redis.Redis(
     host=settings.REDIS_HOST, port=settings.REDIS_PORT, password=settings.REDIS_PASSWORD
 )
 
@@ -21,7 +21,7 @@ def format_key(org_id: str, client_id: str) -> str:
     return f"snyk:{org_id}:{client_id}"
 
 
-def store_auth_token(
+async def store_auth_token(
     org_id: str, client_id: str, auth_token: str, expiration: int | None = None
 ) -> dict:
     """
@@ -39,12 +39,12 @@ def store_auth_token(
 
     key: str = format_key(org_id, client_id)
 
-    redis_client.set(key, auth_token, ex=expiration)
+    await redis_client.set(key, auth_token, ex=expiration)
 
     return {"message": "Auth token stored."}
 
 
-def get_auth_token(org_id: str, client_id: str) -> bytes | None:
+async def get_auth_token(org_id: str, client_id: str) -> bytes | None:
     """
     Retrieves the Snyk auth token for the specified org/client from Redis.
 
@@ -58,13 +58,13 @@ def get_auth_token(org_id: str, client_id: str) -> bytes | None:
 
     key: str = format_key(org_id, client_id)
 
-    if not redis_client.exists(key):
+    if not await redis_client.exists(key):
         return None
 
-    return redis_client.get(key)
+    return await redis_client.get(key)
 
 
-def delete_auth_token(org_id: str, client_id: str) -> dict:
+async def delete_auth_token(org_id: str, client_id: str) -> dict:
     """
     Deletes the Snyk auth token for the specified org/client from Redis.
 
@@ -78,15 +78,15 @@ def delete_auth_token(org_id: str, client_id: str) -> dict:
 
     key: str = format_key(org_id, client_id)
 
-    if not redis_client.exists(key):
+    if not await redis_client.exists(key):
         return {"message": "Auth token not found."}
 
-    redis_client.delete(key)
+    await redis_client.delete(key)
 
     return {"message": "Auth token deleted."}
 
 
-def check_token_age(org_id: str, client_id: str) -> int | None:
+async def check_token_age(org_id: str, client_id: str) -> int | None:
     """
     Checks the age of the Snyk auth token for the specified org/client in Redis.
 
@@ -100,7 +100,7 @@ def check_token_age(org_id: str, client_id: str) -> int | None:
 
     key: str = format_key(org_id, client_id)
 
-    if not redis_client.exists(key):
+    if not await redis_client.exists(key):
         return None
 
-    return redis_client.ttl(key)
+    return await redis_client.ttl(key)
