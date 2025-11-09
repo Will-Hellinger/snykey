@@ -8,7 +8,7 @@ OPENBAO_ADDR: str = settings.OPENBAO_ADDR
 OPENBAO_TOKEN: str = settings.OPENBAO_TOKEN
 SECRET_MOUNT_POINT: str = "kv"
 
-# Shared HTTP client for better performance
+
 http_client: httpx.AsyncClient = httpx.AsyncClient(
     verify=False,
     timeout=30.0,
@@ -123,25 +123,6 @@ async def delete_refresh_key(org_id: str, client_id: str) -> dict:
             f"Failed to delete refresh key for org {org_id}, client {client_id}: {str(e)}"
         )
         return {"error": f"Failed to delete refresh key: {str(e)}"}
-
-
-# Keep sync helper function
-def _vault_path(org_id: str, client_id: str) -> str:
-    """
-    Constructs the Vault path for storing Snyk credentials.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-
-    Returns:
-        str: The Vault path for the Snyk credentials.
-    """
-
-    if not org_id or not client_id:
-        raise ValueError("Both org_id and client_id must be provided")
-
-    return f"{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
 
 
 async def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:

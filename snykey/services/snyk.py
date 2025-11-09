@@ -1,7 +1,6 @@
 import httpx
 
-# Shared HTTP client for better performance
-http_client = httpx.AsyncClient(
+http_client: httpx.AsyncClient = httpx.AsyncClient(
     verify=True,
     timeout=30.0,
     limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
@@ -40,9 +39,10 @@ async def refresh_snyk_token(
         "refresh_token": str(refresh_token),
     }
 
-    resp = await http_client.post(url, data=data, headers=headers)
+    resp: httpx.Response = await http_client.post(url, data=data, headers=headers)
     resp.raise_for_status()
-    result = resp.json()  # This is synchronous in httpx
+
+    result: dict = resp.json()
 
     return {
         "access_token": result.get("access_token"),
