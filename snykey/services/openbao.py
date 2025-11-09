@@ -1,17 +1,21 @@
-import hvac
+import httpx
+import logging
 from core.config import settings
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 OPENBAO_ADDR: str = settings.OPENBAO_ADDR
 OPENBAO_TOKEN: str = settings.OPENBAO_TOKEN
+SECRET_MOUNT_POINT: str = "kv"
 
-client: hvac.Client = hvac.Client(
-    url=OPENBAO_ADDR, token=OPENBAO_TOKEN, verify=False
-)  # Disable SSL verification for local testing
+# Shared HTTP client for better performance
+http_client: httpx.AsyncClient = httpx.AsyncClient(
+    verify=False,
+    timeout=30.0,
+    limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)
+)
 
-SECRET_MOUNT_POINT: str = "kv"  # Default mount point for Vault KV secrets engine
-
-
-def check_vault_sealed() -> bool:
+async def check_vault_sealed() -> bool:
     """
     Checks if the Vault is sealed.
 
@@ -19,12 +23,99 @@ def check_vault_sealed() -> bool:
         bool: True if Vault is sealed, False otherwise.
     """
 
+    url: str = f"{OPENBAO_ADDR}/v1/sys/seal-status"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN}
+    
     try:
-        return client.sys.is_sealed()
-    except hvac.exceptions.InvalidRequest as e:
+        resp: httpx.Response = await http_client.get(url, headers=headers)
+
+        resp.raise_for_status()
+        data: dict = resp.json()
+
+        return data.get("sealed", True)
+    except Exception as e:
         raise RuntimeError(f"Failed to check Vault seal status: {str(e)}")
 
+async def store_refresh_key(org_id: str, client_id: str, refresh_token: str) -> bool:
+    """
+    Stores the Snyk refresh token in OpenBao.
 
+    Args:
+        org_id: Organization ID used as the key identifier
+        client_id: Client ID used as the key identifier
+        refresh_token: Refresh token from Snyk
+
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+
+    url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN, "Content-Type": "application/json"}
+    data: dict[str, dict[str, str]] = {
+        "data": {
+            "refresh_token": refresh_token
+        }
+    }
+    
+    try:
+        resp: httpx.Response = await http_client.post(url, headers=headers, json=data)
+        resp.raise_for_status()
+
+        return True
+    except Exception as e:
+        logger.error(f"Failed to store refresh key for org {org_id}, client {client_id}: {str(e)}")
+        return False
+
+async def get_refresh_key(org_id: str, client_id: str) -> str | None:
+    """
+    Retrieves the Snyk refresh key for the specified org/client from Vault.
+
+    Args:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+
+    Returns:
+        str | None: The Snyk refresh key if found, otherwise None.
+    """
+
+    url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN}
+    
+    try:
+        resp: httpx.Response = await http_client.get(url, headers=headers)
+
+        resp.raise_for_status()
+        data: dict = resp.json()
+
+        return data.get("data", {}).get("data", {}).get("refresh_key")
+    except Exception:
+        return None
+
+async def delete_refresh_key(org_id: str, client_id: str) -> dict:
+    """
+    Deletes the Snyk refresh key for the specified org/client from Vault.
+
+    Args:
+        org_id (str): The organization ID.
+        client_id (str): The client ID.
+
+    Returns:
+        dict: A confirmation message indicating the refresh key was deleted.
+    """
+
+    url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/metadata/snyk/{org_id}/{client_id}"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN}
+    
+    try:
+        resp: httpx.Response = await http_client.delete(url, headers=headers)
+        resp.raise_for_status()
+
+        return {"message": "Refresh key deleted."}
+    except Exception as e:
+        logger.error(f"Failed to delete refresh key for org {org_id}, client {client_id}: {str(e)}")
+        return {"error": f"Failed to delete refresh key: {str(e)}"}
+
+# Keep sync helper function
 def _vault_path(org_id: str, client_id: str) -> str:
     """
     Constructs the Vault path for storing Snyk credentials.
@@ -42,60 +133,7 @@ def _vault_path(org_id: str, client_id: str) -> str:
 
     return f"{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
 
-
-def store_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
-    """
-    Stores the Snyk refresh key in Vault under the specified org/client path.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-        refresh_key (str): The Snyk refresh key to store.
-
-    Returns:
-        dict: A confirmation message indicating the refresh key was stored.
-    """
-
-    path: str = _vault_path(org_id, client_id)
-
-    try:
-        client.secrets.kv.v2.create_or_update_secret(
-            path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
-            secret={"refresh_key": refresh_key},
-            mount_point=SECRET_MOUNT_POINT,
-        )
-    except Exception as e:
-        return {"message": "Failed to store refresh key.", "error": str(e)}
-
-    return {"message": "Refresh key stored."}
-
-
-def get_refresh_key(org_id: str, client_id: str) -> str | None:
-    """
-    Retrieves the Snyk refresh key for the specified org/client from Vault.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-
-    Returns:
-        str | None: The Snyk refresh key if found, otherwise None.
-    """
-
-    path: str = _vault_path(org_id, client_id)
-
-    try:
-        secret = client.secrets.kv.v2.read_secret_version(
-            path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
-            mount_point=SECRET_MOUNT_POINT,
-        )
-
-        return secret["data"]["data"].get("refresh_key")
-    except Exception:
-        return None
-
-
-def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
+async def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
     """
     Updates the Snyk refresh key for the specified org/client in Vault.
 
@@ -107,28 +145,20 @@ def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> dict:
     Returns:
         dict: A confirmation message indicating the refresh key was updated.
     """
+    
+    url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN, "Content-Type": "application/json"}
+    data: dict[str, dict[str, str]] = {
+        "data": {
+            "refresh_key": refresh_key
+        }
+    }
+    
+    try:
+        resp: httpx.Response = await http_client.post(url, headers=headers, json=data)
+        resp.raise_for_status()
 
-    # Same as store (Vault will overwrite)
-    return store_refresh_key(org_id, client_id, refresh_key)
-
-
-def delete_refresh_key(org_id: str, client_id: str) -> dict:
-    """
-    Deletes the Snyk refresh key for the specified org/client from Vault.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-
-    Returns:
-        dict: A confirmation message indicating the refresh key was deleted.
-    """
-
-    path: str = _vault_path(org_id, client_id)
-
-    client.secrets.kv.v2.delete_metadata_and_all_versions(
-        path=path.replace(f"{SECRET_MOUNT_POINT}/data/", ""),
-        mount_point=SECRET_MOUNT_POINT,
-    )
-
-    return {"message": "Refresh key deleted."}
+        return {"message": "Refresh key updated."}
+    except Exception as e:
+        logger.error(f"Failed to update refresh key for org {org_id}, client {client_id}: {str(e)}")
+        return {"error": f"Failed to update refresh key: {str(e)}"}

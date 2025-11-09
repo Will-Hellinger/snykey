@@ -1,6 +1,5 @@
 fastapi==0.115.14
-hvac==2.3.0
 pydantic==2.11.7
 pydantic_settings==2.10.1
 httpx==0.28.1
-redis
+redis==6.2.0

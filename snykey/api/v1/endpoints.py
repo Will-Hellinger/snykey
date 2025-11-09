@@ -26,7 +26,7 @@ async def store_credentials(
         JSONResponse: A response indicating success or failure.
     """
 
-    if openbao.check_vault_sealed():
+    if await openbao.check_vault_sealed():
         return JSONResponse(
             status_code=503,
             content={"error": "Vault is sealed, cannot store credentials."},
@@ -42,7 +42,7 @@ async def store_credentials(
             client_id,
         )
 
-        openbao.store_refresh_key(org_id, client_id, result["refresh_token"])
+        await openbao.store_refresh_key(org_id, client_id, result["refresh_token"])
     except Exception as e:
         logger.error("Failed to refresh Snyk token: %s", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -88,7 +88,12 @@ async def get_credentials(org_id: str, client_id: str, client_secret: str) -> JS
         client_id,
     )
 
-    refresh_key: str | None = openbao.get_refresh_key(org_id, client_id)
+    refresh_key: str | None = None
+    
+    try:
+        refresh_key = await openbao.get_refresh_key(org_id, client_id)
+    except Exception as e:
+        logger.error("Failed to retrieve refresh key from OpenBao: %s", e)
 
     if not refresh_key:
         return JSONResponse(
@@ -107,7 +112,7 @@ async def get_credentials(org_id: str, client_id: str, client_secret: str) -> JS
             org_id,
             client_id,
         )
-        openbao.update_refresh_key(org_id, client_id, result["refresh_token"])
+        await openbao.update_refresh_key(org_id, client_id, result["refresh_token"])
     except Exception as e:
         logger.error("Failed to refresh Snyk token: %s", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -153,7 +158,7 @@ async def delete_credentials(org_id: str, client_id: str) -> JSONResponse:
 
     await redis.delete_auth_token(org_id, client_id)
 
-    openbao.delete_refresh_key(org_id, client_id)
+    await openbao.delete_refresh_key(org_id, client_id)
 
     return JSONResponse(content={"message": "Credentials deleted."})
 

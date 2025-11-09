@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from services import openbao
 
 
@@ -39,32 +39,51 @@ def refresh_key() -> str:
     return "refresh123"
 
 
-def test_check_vault_sealed_true():
+@pytest.mark.asyncio
+async def test_check_vault_sealed_true():
     """
     Test that check_vault_sealed returns True when Vault is sealed.
     """
 
-    with patch.object(openbao.client.sys, "is_sealed", return_value=False):
-        assert openbao.check_vault_sealed() is False
+    # httpx response methods are sync, not async
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"sealed": True}
+    mock_response.raise_for_status.return_value = None
+    
+    # Mock the async get method
+    async def mock_get(*args, **kwargs):
+        return mock_response
+    
+    with patch.object(openbao.http_client, "get", side_effect=mock_get):
+        assert await openbao.check_vault_sealed() is True
 
 
-def test_check_vault_sealed_false():
+@pytest.mark.asyncio
+async def test_check_vault_sealed_false():
     """
     Test that check_vault_sealed returns False when Vault is not sealed.
     """
 
-    with patch.object(openbao.client.sys, "is_sealed", return_value=True):
-        assert openbao.check_vault_sealed() is True
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"sealed": False}
+    mock_response.raise_for_status.return_value = None
+    
+    async def mock_get(*args, **kwargs):
+        return mock_response
+    
+    with patch.object(openbao.http_client, "get", side_effect=mock_get):
+        assert await openbao.check_vault_sealed() is False
 
 
-def test_check_vault_sealed_error():
+@pytest.mark.asyncio
+async def test_check_vault_sealed_error():
     """
     Test that check_vault_sealed raises an exception when there is an error checking the seal status.
     """
 
-    with patch.object(openbao.client.sys, "is_sealed", side_effect=Exception("fail")):
-        with pytest.raises(Exception):
-            openbao.check_vault_sealed()
+    with patch.object(openbao.http_client, "get", side_effect=Exception("Connection failed")):
+        with pytest.raises(RuntimeError):
+            await openbao.check_vault_sealed()
 
 
 def test_vault_path(org_id: str, client_id: str):
@@ -91,126 +110,115 @@ def test_vault_path_missing_args():
         openbao._vault_path("org1", "")
 
 
-@patch.object(openbao.client.secrets.kv.v2, "create_or_update_secret")
-def test_store_refresh_key_success(
-    mock_create, org_id: str, client_id: str, refresh_key: str
-):
+@pytest.mark.asyncio
+async def test_store_refresh_key_success(org_id: str, client_id: str):
     """
-    Test that store_refresh_key successfully stores the Snyk refresh key in Vault.
+    Test that store_refresh_key successfully stores the Snyk refresh token in OpenBao.
 
     Args:
-        mock_create (MagicMock): Mocked create_or_update_secret method.
         org_id (str): The organization ID.
         client_id (str): The client ID.
-        refresh_key (str): The Snyk refresh key to store.
     """
 
-    mock_create.return_value = None
+    mock_response: MagicMock = MagicMock()
+    mock_response.raise_for_status.return_value = None
 
-    result: dict = openbao.store_refresh_key(org_id, client_id, refresh_key)
+    async def mock_post(*args, **kwargs):
+        return mock_response
 
-    assert result == {"message": "Refresh key stored."}
+    with patch.object(openbao.http_client, "post", side_effect=mock_post):
+        result = await openbao.store_refresh_key(org_id, client_id, "refresh_token")
+        assert result is True
 
-    mock_create.assert_called_once()
 
-
-@patch.object(
-    openbao.client.secrets.kv.v2,
-    "create_or_update_secret",
-    side_effect=Exception("fail"),
-)
-def test_store_refresh_key_error(
-    mock_create, org_id: str, client_id: str, refresh_key: str
-):
+@pytest.mark.asyncio
+async def test_store_refresh_key_error(org_id: str, client_id: str):
     """
-    Test that store_refresh_key handles errors when storing the Snyk refresh key in Vault.
+    Test that store_refresh_key handles errors when storing the Snyk refresh token in OpenBao.
 
     Args:
-        mock_create (MagicMock): Mocked create_or_update_secret method that raises an exception.
         org_id (str): The organization ID.
         client_id (str): The client ID.
-        refresh_key (str): The Snyk refresh key to store.
     """
 
-    result: dict = openbao.store_refresh_key(org_id, client_id, refresh_key)
+    with patch.object(openbao.http_client, "post", side_effect=Exception("Connection failed")):
+        result = await openbao.store_refresh_key(org_id, client_id, "refresh_token")
+        
+        assert result is False
 
-    assert result["message"] == "Failed to store refresh key."
-    assert "fail" in result["error"]
 
-
-@patch.object(openbao.client.secrets.kv.v2, "read_secret_version")
-def test_get_refresh_key_found(
-    mock_read, org_id: str, client_id: str, refresh_key: str
-):
+@pytest.mark.asyncio
+async def test_get_refresh_key_found(org_id: str, client_id: str, refresh_key: str):
     """
     Test that get_refresh_key retrieves the Snyk refresh key from Vault.
 
     Args:
-        mock_read (MagicMock): Mocked read_secret_version method.
         org_id (str): The organization ID.
         client_id (str): The client ID.
         refresh_key (str): The Snyk refresh key to retrieve.
     """
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"data": {"data": {"refresh_key": refresh_key}}}
+    mock_response.raise_for_status.return_value = None
 
-    mock_read.return_value = {"data": {"data": {"refresh_key": refresh_key}}}
+    async def mock_get(*args, **kwargs):
+        return mock_response
 
-    result: str | None = openbao.get_refresh_key(org_id, client_id)
+    with patch.object(openbao.http_client, "get", side_effect=mock_get):
+        result = await openbao.get_refresh_key(org_id, client_id)
+        assert result == refresh_key
 
-    assert result == refresh_key
 
-
-@patch.object(
-    openbao.client.secrets.kv.v2, "read_secret_version", side_effect=Exception()
-)
-def test_get_refresh_key_not_found(mock_read, org_id: str, client_id: str):
+@pytest.mark.asyncio
+async def test_get_refresh_key_not_found(org_id: str, client_id: str):
     """
     Test that get_refresh_key returns None when the refresh key is not found.
 
     Args:
-        mock_read (MagicMock): Mocked read_secret_version method that raises an exception.
         org_id (str): The organization ID.
         client_id (str): The client ID.
     """
+    with patch.object(openbao.http_client, "get", side_effect=Exception("Not found")):
+        result = await openbao.get_refresh_key(org_id, client_id)
+        assert result is None
 
-    result: str | None = openbao.get_refresh_key(org_id, client_id)
 
-    assert result is None
-
-
-@patch.object(openbao, "store_refresh_key")
-def test_update_refresh_key(mock_store, org_id: str, client_id: str, refresh_key: str):
+@pytest.mark.asyncio
+async def test_update_refresh_key(org_id: str, client_id: str, refresh_key: str):
     """
     Test that update_refresh_key updates the Snyk refresh key in Vault.
 
     Args:
-        mock_store (MagicMock): Mocked store_refresh_key method.
         org_id (str): The organization ID.
         client_id (str): The client ID.
         refresh_key (str): The Snyk refresh key to update.
     """
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
 
-    mock_store.return_value = {"message": "Refresh key stored."}
+    async def mock_post(*args, **kwargs):
+        return mock_response
 
-    result: dict = openbao.update_refresh_key(org_id, client_id, refresh_key)
+    with patch.object(openbao.http_client, "post", side_effect=mock_post):
+        result = await openbao.update_refresh_key(org_id, client_id, refresh_key)
+        assert result == {"message": "Refresh key updated."}
 
-    assert result == {"message": "Refresh key stored."}
 
-
-@patch.object(openbao.client.secrets.kv.v2, "delete_metadata_and_all_versions")
-def test_delete_refresh_key(mock_delete, org_id: str, client_id: str):
+@pytest.mark.asyncio
+async def test_delete_refresh_key(org_id: str, client_id: str):
     """
     Test that delete_refresh_key deletes the Snyk refresh key from Vault.
 
     Args:
-        mock_delete (MagicMock): Mocked delete_metadata_and_all_versions method.
         org_id (str): The organization ID.
         client_id (str): The client ID.
     """
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
 
-    mock_delete.return_value = None
+    async def mock_delete(*args, **kwargs):
+        return mock_response
 
-    result: dict = openbao.delete_refresh_key(org_id, client_id)
-
-    assert result == {"message": "Refresh key deleted."}
-
-    mock_delete.assert_called_once()
+    with patch.object(openbao.http_client, "delete", side_effect=mock_delete):
+        result = await openbao.delete_refresh_key(org_id, client_id)
+        assert result == {"message": "Refresh key deleted."}

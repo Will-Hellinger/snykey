@@ -57,9 +57,11 @@ def test_store_credentials_success(monkeypatch, store_req):
     """
 
     # Patch all external calls with async mocks
+    async def async_check_vault_sealed():
+        return False
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
-        lambda: False,
+        async_check_vault_sealed,
     )
     async def async_refresh_snyk_token(cid, cs, rk):
         return {
@@ -72,7 +74,7 @@ def test_store_credentials_success(monkeypatch, store_req):
         async_refresh_snyk_token,
     )
     async def async_store_refresh_key(o, c, r):
-        return None
+        return True
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.store_refresh_key",
         async_store_refresh_key,
@@ -93,9 +95,11 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
         store_req: The request data for storing credentials.
     """
 
+    async def async_check_vault_sealed():
+        return True
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
-        lambda: True,
+        async_check_vault_sealed,
     )
 
     response = client.put("/credentials", params=store_req)
@@ -113,9 +117,11 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         store_req: The request data for storing credentials.
     """
 
+    async def async_check_vault_sealed():
+        return False
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
-        lambda: False,
+        async_check_vault_sealed,
     )
     async def async_refresh_snyk_token(cid, cs, rk):
         raise Exception("fail")
@@ -167,9 +173,11 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
         "api.v1.endpoints.redis.get_auth_token",
         async_get_auth_token,
     )
+    async def async_get_refresh_key(o, c):
+        return None
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
-        lambda o, c: None,
+        async_get_refresh_key,
     )
 
     response = client.get("/credentials", params=get_req)
@@ -192,9 +200,11 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         "api.v1.endpoints.redis.get_auth_token",
         async_get_auth_token,
     )
+    async def async_get_refresh_key(o, c):
+        return "refresh1"
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
-        lambda o, c: "refresh1",
+        async_get_refresh_key,
     )
     async def async_refresh_snyk_token(cid, cs, rk):
         raise Exception("fail")
@@ -223,9 +233,11 @@ def test_delete_credentials_success(monkeypatch, delete_req):
         "api.v1.endpoints.redis.delete_auth_token",
         async_delete_auth_token,
     )
+    async def async_delete_refresh_key(o, c):
+        return {"message": "Refresh key deleted."}
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.delete_refresh_key",
-        lambda o, c: None,
+        async_delete_refresh_key,
     )
 
     response = client.delete("/credentials", params=delete_req)
