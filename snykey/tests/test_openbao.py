@@ -49,11 +49,11 @@ async def test_check_vault_sealed_true():
     mock_response = MagicMock()
     mock_response.json.return_value = {"sealed": True}
     mock_response.raise_for_status.return_value = None
-    
+
     # Mock the async get method
     async def mock_get(*args, **kwargs):
         return mock_response
-    
+
     with patch.object(openbao.http_client, "get", side_effect=mock_get):
         assert await openbao.check_vault_sealed() is True
 
@@ -67,10 +67,10 @@ async def test_check_vault_sealed_false():
     mock_response = MagicMock()
     mock_response.json.return_value = {"sealed": False}
     mock_response.raise_for_status.return_value = None
-    
+
     async def mock_get(*args, **kwargs):
         return mock_response
-    
+
     with patch.object(openbao.http_client, "get", side_effect=mock_get):
         assert await openbao.check_vault_sealed() is False
 
@@ -81,7 +81,9 @@ async def test_check_vault_sealed_error():
     Test that check_vault_sealed raises an exception when there is an error checking the seal status.
     """
 
-    with patch.object(openbao.http_client, "get", side_effect=Exception("Connection failed")):
+    with patch.object(
+        openbao.http_client, "get", side_effect=Exception("Connection failed")
+    ):
         with pytest.raises(RuntimeError):
             await openbao.check_vault_sealed()
 
@@ -141,9 +143,11 @@ async def test_store_refresh_key_error(org_id: str, client_id: str):
         client_id (str): The client ID.
     """
 
-    with patch.object(openbao.http_client, "post", side_effect=Exception("Connection failed")):
+    with patch.object(
+        openbao.http_client, "post", side_effect=Exception("Connection failed")
+    ):
         result = await openbao.store_refresh_key(org_id, client_id, "refresh_token")
-        
+
         assert result is False
 
 
@@ -158,7 +162,7 @@ async def test_get_refresh_key_found(org_id: str, client_id: str, refresh_key: s
         refresh_key (str): The Snyk refresh key to retrieve.
     """
     mock_response = MagicMock()
-    mock_response.json.return_value = {"data": {"data": {"refresh_key": refresh_key}}}
+    mock_response.json.return_value = {"data": {"data": {"refresh_token": refresh_key}}}
     mock_response.raise_for_status.return_value = None
 
     async def mock_get(*args, **kwargs):

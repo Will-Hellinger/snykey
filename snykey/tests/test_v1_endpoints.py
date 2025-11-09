@@ -14,7 +14,7 @@ def store_req() -> dict:
     Returns:
         dict: A dictionary containing organization ID, client ID, client secret, and refresh key.
     """
-    
+
     return {
         "org_id": "org1",
         "client_id": "client1",
@@ -43,7 +43,7 @@ def delete_req() -> dict:
     Returns:
         dict: A dictionary containing organization ID and client ID.
     """
-    
+
     return {"org_id": "org1", "client_id": "client1"}
 
 
@@ -59,22 +59,27 @@ def test_store_credentials_success(monkeypatch, store_req):
     # Patch all external calls with async mocks
     async def async_check_vault_sealed():
         return False
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
         async_check_vault_sealed,
     )
+
     async def async_refresh_snyk_token(cid, cs, rk):
         return {
             "access_token": "token",
             "refresh_token": "refresh",
             "expires_in": 3600,
         }
+
     monkeypatch.setattr(
         "api.v1.endpoints.snyk.refresh_snyk_token",
         async_refresh_snyk_token,
     )
+
     async def async_store_refresh_key(o, c, r):
         return True
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.store_refresh_key",
         async_store_refresh_key,
@@ -97,6 +102,7 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
 
     async def async_check_vault_sealed():
         return True
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
         async_check_vault_sealed,
@@ -119,12 +125,15 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
 
     async def async_check_vault_sealed():
         return False
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.check_vault_sealed",
         async_check_vault_sealed,
     )
+
     async def async_refresh_snyk_token(cid, cs, rk):
         raise Exception("fail")
+
     monkeypatch.setattr(
         "api.v1.endpoints.snyk.refresh_snyk_token",
         async_refresh_snyk_token,
@@ -147,6 +156,7 @@ def test_get_credentials_from_redis(monkeypatch, get_req):
 
     async def async_get_auth_token(o, c):
         return b"token"
+
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
         async_get_auth_token,
@@ -169,12 +179,15 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
 
     async def async_get_auth_token(o, c):
         return None
+
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
         async_get_auth_token,
     )
+
     async def async_get_refresh_key(o, c):
         return None
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
         async_get_refresh_key,
@@ -196,18 +209,23 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
 
     async def async_get_auth_token(o, c):
         return None
+
     monkeypatch.setattr(
         "api.v1.endpoints.redis.get_auth_token",
         async_get_auth_token,
     )
+
     async def async_get_refresh_key(o, c):
         return "refresh1"
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.get_refresh_key",
         async_get_refresh_key,
     )
+
     async def async_refresh_snyk_token(cid, cs, rk):
         raise Exception("fail")
+
     monkeypatch.setattr(
         "api.v1.endpoints.snyk.refresh_snyk_token",
         async_refresh_snyk_token,
@@ -229,12 +247,15 @@ def test_delete_credentials_success(monkeypatch, delete_req):
 
     async def async_delete_auth_token(o, c):
         return None
+
     monkeypatch.setattr(
         "api.v1.endpoints.redis.delete_auth_token",
         async_delete_auth_token,
     )
+
     async def async_delete_refresh_key(o, c):
         return {"message": "Refresh key deleted."}
+
     monkeypatch.setattr(
         "api.v1.endpoints.openbao.delete_refresh_key",
         async_delete_refresh_key,
@@ -267,6 +288,7 @@ def test_delete_cache_key(monkeypatch, delete_req):
 
     async def async_delete_auth_token(o, c):
         return {"message": "Deleted"}
+
     monkeypatch.setattr(
         "api.v1.endpoints.redis.delete_auth_token",
         async_delete_auth_token,

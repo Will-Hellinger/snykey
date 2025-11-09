@@ -34,7 +34,9 @@ async def store_credentials(
 
     logger.info("Refreshing key to ensure no other process can use it.")
     try:
-        result: dict = await snyk.refresh_snyk_token(client_id, client_secret, refresh_key)
+        result: dict = await snyk.refresh_snyk_token(
+            client_id, client_secret, refresh_key
+        )
 
         logger.info(
             "Successfully refreshed Snyk token for org_id: %s, client_id: %s",
@@ -51,7 +53,9 @@ async def store_credentials(
 
 
 @router.get("/credentials")
-async def get_credentials(org_id: str, client_id: str, client_secret: str) -> JSONResponse:
+async def get_credentials(
+    org_id: str, client_id: str, client_secret: str
+) -> JSONResponse:
     """
     Gather Snyk credentials using the provided org_id and client_id.
 
@@ -89,7 +93,7 @@ async def get_credentials(org_id: str, client_id: str, client_secret: str) -> JS
     )
 
     refresh_key: str | None = None
-    
+
     try:
         refresh_key = await openbao.get_refresh_key(org_id, client_id)
     except Exception as e:
@@ -105,7 +109,9 @@ async def get_credentials(org_id: str, client_id: str, client_secret: str) -> JS
         "Refreshing Snyk token for org_id: %s, client_id: %s", org_id, client_id
     )
     try:
-        result: dict = await snyk.refresh_snyk_token(client_id, client_secret, refresh_key)
+        result: dict = await snyk.refresh_snyk_token(
+            client_id, client_secret, refresh_key
+        )
 
         logger.info(
             "Successfully refreshed Snyk token for org_id: %s, client_id: %s",

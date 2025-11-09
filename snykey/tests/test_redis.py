@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from services import redis as redis_service
 
+
 @pytest.fixture
 def org_id() -> str:
     """
@@ -12,6 +13,7 @@ def org_id() -> str:
     """
 
     return "org1"
+
 
 @pytest.fixture
 def client_id() -> str:
@@ -24,6 +26,7 @@ def client_id() -> str:
 
     return "client1"
 
+
 def test_format_key(org_id: str, client_id: str):
     """
     Test the format_key function to ensure it constructs the Redis key correctly.
@@ -34,6 +37,7 @@ def test_format_key(org_id: str, client_id: str):
     """
 
     assert redis_service.format_key(org_id, client_id) == "snyk:org1:client1"
+
 
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
@@ -52,8 +56,9 @@ async def test_store_auth_token(mock_redis, org_id: str, client_id: str):
         org_id, client_id, "token", expiration=60
     )
     mock_redis.set.assert_awaited_with("snyk:org1:client1", "token", ex=60)
-    
+
     assert result == {"message": "Auth token stored."}
+
 
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
@@ -73,6 +78,7 @@ async def test_get_auth_token_found(mock_redis, org_id: str, client_id: str):
 
     assert result == b"token"
 
+
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
 async def test_get_auth_token_not_found(mock_redis, org_id: str, client_id: str):
@@ -89,6 +95,7 @@ async def test_get_auth_token_not_found(mock_redis, org_id: str, client_id: str)
     result: bytes | None = await redis_service.get_auth_token(org_id, client_id)
 
     assert result is None
+
 
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
@@ -109,6 +116,7 @@ async def test_delete_auth_token_found(mock_redis, org_id: str, client_id: str):
 
     assert result == {"message": "Auth token deleted."}
 
+
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
 async def test_delete_auth_token_not_found(mock_redis, org_id: str, client_id: str):
@@ -124,6 +132,7 @@ async def test_delete_auth_token_not_found(mock_redis, org_id: str, client_id: s
     result: dict = await redis_service.delete_auth_token(org_id, client_id)
 
     assert result == {"message": "Auth token not found."}
+
 
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
@@ -142,6 +151,7 @@ async def test_check_token_age_found(mock_redis, org_id: str, client_id: str):
     result: int | None = await redis_service.check_token_age(org_id, client_id)
 
     assert result == 42
+
 
 @pytest.mark.asyncio
 @patch.object(redis_service, "redis_client")
