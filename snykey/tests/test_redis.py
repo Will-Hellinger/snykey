@@ -128,6 +128,7 @@ async def test_delete_auth_token_not_found(mock_redis, org_id: str, client_id: s
         org_id (str): The organization ID.
         client_id (str): The client ID.
     """
+
     mock_redis.exists = AsyncMock(return_value=False)
     result: dict = await redis_service.delete_auth_token(org_id, client_id)
 
