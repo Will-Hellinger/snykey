@@ -1,7 +1,11 @@
 import coverage
+import os
+
+# Get the absolute path to the snykey directory
+snykey_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cov: coverage.Coverage = coverage.Coverage(
-    source=["snykey"], omit=["__init__.py", "*/tests/*"]
+    source=[snykey_path], omit=["__init__.py", "*/tests/*"]
 )
 
 
@@ -34,4 +38,5 @@ def pytest_sessionfinish(session, exitstatus) -> None:
     cov.stop()
     cov.save()
     cov.html_report(directory="htmlcov")
+    cov.xml_report(outfile="coverage.xml")
     cov.report()

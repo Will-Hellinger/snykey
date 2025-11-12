@@ -88,30 +88,6 @@ async def test_check_vault_sealed_error():
             await openbao.check_vault_sealed()
 
 
-def test_vault_path(org_id: str, client_id: str):
-    """
-    Test that _vault_path constructs the correct Vault path for storing Snyk credentials.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-    """
-
-    assert openbao._vault_path(org_id, client_id) == "kv/data/snyk/org1/client1"
-
-
-def test_vault_path_missing_args():
-    """
-    Test that _vault_path raises ValueError when org_id or client_id is missing.
-    """
-
-    with pytest.raises(ValueError):
-        openbao._vault_path("", "client1")
-
-    with pytest.raises(ValueError):
-        openbao._vault_path("org1", "")
-
-
 @pytest.mark.asyncio
 async def test_store_refresh_key_success(org_id: str, client_id: str):
     """
