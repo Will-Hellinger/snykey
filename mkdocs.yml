@@ -1,3 +1,4 @@
+---
 site_name: "Snykey Developer Docs"
 site_description: "Documentation for Snykey"
 theme:
@@ -47,7 +48,7 @@ nav:
 
 docs_dir: docs
 
-plugins: 
+plugins:
   - search
   - mkdocstrings:
       default_handler: python

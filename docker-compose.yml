@@ -29,8 +29,8 @@ services:
     volumes:
       - ./.container_volumes/redis/data:/data:rw
       - ./.container_volumes/redis/config/redis.conf:/etc/redis.conf:ro
-    entrypoint: ["redis-server", "/etc/redis.conf"] 
-  
+    entrypoint: ["redis-server", "/etc/redis.conf"]
+
   openbao:
     image: "openbao/openbao:latest"
     container_name: openbao

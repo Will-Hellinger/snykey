@@ -22,7 +22,7 @@ You can modify these in your `.env` file or override them in your deployment env
 
 ## Redis Configuration
 
-Redis is configured via [`configs/redis_config.conf`](../configs/redis_config.conf).  
+Redis is configured via [`configs/redis_config.conf`](../configs/redis_config.conf).
 You can adjust:
 
 - **Port**: Change the `port` directive.

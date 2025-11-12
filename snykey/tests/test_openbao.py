@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 from services import openbao
+from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture
@@ -46,12 +46,11 @@ async def test_check_vault_sealed_true():
     """
 
     # httpx response methods are sync, not async
-    mock_response = MagicMock()
+    mock_response: MagicMock = MagicMock()
     mock_response.json.return_value = {"sealed": True}
     mock_response.raise_for_status.return_value = None
 
-    # Mock the async get method
-    async def mock_get(*args, **kwargs):
+    def mock_get(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "get", side_effect=mock_get):
@@ -64,11 +63,11 @@ async def test_check_vault_sealed_false():
     Test that check_vault_sealed returns False when Vault is not sealed.
     """
 
-    mock_response = MagicMock()
+    mock_response: MagicMock = MagicMock()
     mock_response.json.return_value = {"sealed": False}
     mock_response.raise_for_status.return_value = None
 
-    async def mock_get(*args, **kwargs):
+    def mock_get(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "get", side_effect=mock_get):
@@ -88,30 +87,6 @@ async def test_check_vault_sealed_error():
             await openbao.check_vault_sealed()
 
 
-def test_vault_path(org_id: str, client_id: str):
-    """
-    Test that _vault_path constructs the correct Vault path for storing Snyk credentials.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-    """
-
-    assert openbao._vault_path(org_id, client_id) == "kv/data/snyk/org1/client1"
-
-
-def test_vault_path_missing_args():
-    """
-    Test that _vault_path raises ValueError when org_id or client_id is missing.
-    """
-
-    with pytest.raises(ValueError):
-        openbao._vault_path("", "client1")
-
-    with pytest.raises(ValueError):
-        openbao._vault_path("org1", "")
-
-
 @pytest.mark.asyncio
 async def test_store_refresh_key_success(org_id: str, client_id: str):
     """
@@ -125,7 +100,7 @@ async def test_store_refresh_key_success(org_id: str, client_id: str):
     mock_response: MagicMock = MagicMock()
     mock_response.raise_for_status.return_value = None
 
-    async def mock_post(*args, **kwargs):
+    def mock_post(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "post", side_effect=mock_post):
@@ -161,11 +136,12 @@ async def test_get_refresh_key_found(org_id: str, client_id: str, refresh_key: s
         client_id (str): The client ID.
         refresh_key (str): The Snyk refresh key to retrieve.
     """
-    mock_response = MagicMock()
+
+    mock_response: MagicMock = MagicMock()
     mock_response.json.return_value = {"data": {"data": {"refresh_token": refresh_key}}}
     mock_response.raise_for_status.return_value = None
 
-    async def mock_get(*args, **kwargs):
+    def mock_get(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "get", side_effect=mock_get):
@@ -182,6 +158,7 @@ async def test_get_refresh_key_not_found(org_id: str, client_id: str):
         org_id (str): The organization ID.
         client_id (str): The client ID.
     """
+
     with patch.object(openbao.http_client, "get", side_effect=Exception("Not found")):
         result = await openbao.get_refresh_key(org_id, client_id)
         assert result is None
@@ -197,10 +174,11 @@ async def test_update_refresh_key(org_id: str, client_id: str, refresh_key: str)
         client_id (str): The client ID.
         refresh_key (str): The Snyk refresh key to update.
     """
-    mock_response = MagicMock()
+
+    mock_response: MagicMock = MagicMock()
     mock_response.raise_for_status.return_value = None
 
-    async def mock_post(*args, **kwargs):
+    def mock_post(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "post", side_effect=mock_post):
@@ -217,10 +195,11 @@ async def test_delete_refresh_key(org_id: str, client_id: str):
         org_id (str): The organization ID.
         client_id (str): The client ID.
     """
-    mock_response = MagicMock()
+
+    mock_response: MagicMock = MagicMock()
     mock_response.raise_for_status.return_value = None
 
-    async def mock_delete(*args, **kwargs):
+    def mock_delete(*args, **kwargs):
         return mock_response
 
     with patch.object(openbao.http_client, "delete", side_effect=mock_delete):

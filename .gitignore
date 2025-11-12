@@ -166,3 +166,4 @@ temp/
 .vscode/
 .container_volumes/
 .ruff_cache
+.scannerwork

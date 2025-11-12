@@ -5,8 +5,8 @@
 [![Art by @stawbeby](https://img.shields.io/badge/Art%20by-%40stawbeby-indigo?style=for-the-badge&logo=instagram)](https://www.instagram.com/stawbeby/profilecard)
 
 
-Snykey is a secure service for managing and distributing Snyk API credentials to your applications.  
-It ensures that your software always has access to valid Snyk access tokens, while securely storing and automatically rotating refresh keys using OpenBao.  
+Snykey is a secure service for managing and distributing Snyk API credentials to your applications.
+It ensures that your software always has access to valid Snyk access tokens, while securely storing and automatically rotating refresh keys using OpenBao.
 This takes the persistence and secrets management burden off of your project!
 
 ## Features
