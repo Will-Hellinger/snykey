@@ -8,8 +8,8 @@ Welcome to the documentation for **Snykey**!
 
 ## What is Snykey?
 
-Snykey is a centralized service for managing and distributing Snyk API credentials to your applications.  
-It ensures your software always has access to valid Snyk access tokens, while securely storing and rotating refresh keys using OpenBao (Vault).  
+Snykey is a centralized service for managing and distributing Snyk API credentials to your applications.
+It ensures your software always has access to valid Snyk access tokens, while securely storing and rotating refresh keys using OpenBao (Vault).
 This removes the persistence and secrets management burden from your application code.
 
 ## Key Features
