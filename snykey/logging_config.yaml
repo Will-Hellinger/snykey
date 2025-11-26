@@ -4,23 +4,23 @@ formatters:
   default:
     format: "%(levelname)s %(asctime)s %(message)s"
 handlers:
-  file:
-    class: logging.FileHandler
+  console:
+    class: logging.StreamHandler
     formatter: default
-    filename: /snykey/logs/uvicorn.log
+    stream: ext://sys.stdout
 loggers:
   uvicorn:
-    handlers: [file]
+    handlers: [console]
     level: INFO
     propagate: no
   uvicorn.error:
-    handlers: [file]
+    handlers: [console]
     level: INFO
     propagate: no
   uvicorn.access:
-    handlers: [file]
+    handlers: [console]
     level: INFO
     propagate: no
 root:
-  handlers: [file]
+  handlers: [console]
   level: INFO

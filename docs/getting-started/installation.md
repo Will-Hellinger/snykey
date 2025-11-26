@@ -15,14 +15,15 @@ cd snykey
 Copy .env_example to .env and fill in your secrets and environment-specific values.
 Adjust any configuration in configs/ if needed.
 
-## 3. Run the Setup Script
-The setup script will:
+## 3. Run the Setup Scripts
+The setup scripts will:
 
 * Create required directories and volume mounts
 * Copy configuration files for OpenBao and Redis
 * Generate self-signed certificates for local development
 
-Run: `sh /scripts/setup.sh`
+Run: `python3 ./scripts/setup.py`
+Run: `python3 ./scripts/genreate_certs.py`
 
 ## 4. Start the Stack
 Start all services with Docker Compose:
@@ -45,7 +46,7 @@ docker exec -it openbao bao operator init -n 1 -t 1
 docker compose down
 ```
 
-```
+```bash
 docker compose up -d
 ```
 
