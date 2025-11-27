@@ -37,6 +37,10 @@ def pytest_sessionfinish(session, exitstatus) -> None:
 
     cov.stop()
     cov.save()
-    cov.html_report(directory="htmlcov")
-    cov.xml_report(outfile="coverage.xml")
-    cov.report()
+
+    try:
+        cov.html_report(directory="htmlcov")
+        cov.xml_report(outfile="coverage.xml")
+        cov.report()
+    except coverage.exceptions.NoDataError:
+        print("Warning: No coverage data collected")
