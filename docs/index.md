@@ -19,6 +19,7 @@ This removes the persistence and secrets management burden from your application
 - **REST API** for requesting and updating credentials
 - **OpenBao integration** for robust secrets management
 - **Easy deployment** with Docker Compose
+- **Easy App Creation** providing all necessary endpoints for app registration.
 
 ## How It Works
 
@@ -48,7 +49,7 @@ To run the test suite:
 
 ```bash
 pip install -r tests/requirements.txt
-pytest
+pytest snykey/tests
 ```
 
 ## OpenBao Setup (Summary)
