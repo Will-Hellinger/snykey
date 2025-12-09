@@ -33,8 +33,11 @@ async def check_vault_sealed() -> bool:
         resp.raise_for_status()
         data: dict = resp.json()
 
-        return data.get("sealed", True)
+        sealed = data.get("sealed", True)
+        logger.info(f"Vault seal status check: sealed={sealed}, response={data}")
+        return sealed
     except Exception as e:
+        logger.error(f"Failed to check Vault seal status: {str(e)}")
         raise RuntimeError(f"Failed to check Vault seal status: {str(e)}")
 
 

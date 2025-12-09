@@ -1,4 +1,4 @@
-FROM python:3.13-alpine
+FROM ghcr.io/astral-sh/uv:python3.13-alpine
 
 RUN addgroup -g 1001 -S snykey && \
     adduser -u 1001 -S snykey -G snykey
@@ -10,9 +10,8 @@ RUN mkdir -p /snykey/logs /snykey/certs /snykey/certs/ca && \
 
 WORKDIR /snykey
 
-# Install dependencies and clean up
-RUN apk add --no-cache uv \
-    && uv pip install --system --no-cache-dir -r requirements.txt uvicorn pyyaml \
+# Install dependencies and clean up (just in case)
+RUN uv pip install --system --no-cache-dir -r requirements.txt \
     && rm requirements.txt \
     && mkdir -p /snykey/logs /snykey/certs /snykey/certs/ca \
     && find /snykey -type d -name '__pycache__' -exec rm -rf {} + \
@@ -21,8 +20,8 @@ RUN apk add --no-cache uv \
 
 USER snykey
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 \
-    --log-config /snykey/logging_config.yaml \
-    --ssl-keyfile /snykey/certs/app.key \
-    --ssl-certfile /snykey/certs/app.crt \
-    --ssl-ca-certs /snykey/certs/ca/ca.crt > /snykey/logs/app.log 2>&1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--log-config", "/snykey/logging_config.yaml", \
+     "--ssl-keyfile", "/snykey/certs/app.key", \
+     "--ssl-certfile", "/snykey/certs/app.crt", \
+     "--ssl-ca-certs", "/snykey/certs/ca/ca.crt"]
