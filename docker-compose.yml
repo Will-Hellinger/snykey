@@ -1,18 +1,29 @@
 ---
 version: "3.8"
 
+networks:
+  snykey-internal:
+    driver: bridge
+    internal: true
+  snykey-external:
+    driver: bridge
+
 services:
   snykey:
     build: .
+    container_name: snykey
     ports:
       - "8000:8000"
     environment:
-      - OPENBAO_ADDR=https://openbao:8200
+      - OPENBAO_ADDR=${OPENBAO_ADDR}
       - OPENBAO_TOKEN=${OPENBAO_TOKEN}
-      - REDIS_HOST=redis
+      - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_CACHE_TIME=${REDIS_CACHE_TIME}
+      - REDIS_PKCE_EXPIRATION=${REDIS_PKCE_EXPIRATION}
+      - EXCLUDED_PATHS=${EXCLUDED_PATHS}
+      - API_KEY=${API_KEY}
     volumes:
       - ./.container_volumes/app/logs:/snykey/logs:rw,Z
       - ./.container_volumes/certs/app:/snykey/certs:rw,z
@@ -20,6 +31,9 @@ services:
     depends_on:
       - openbao
       - redis
+    networks:
+      - snykey-external
+      - snykey-internal
 
   redis:
     image: "redis:latest"
@@ -30,6 +44,10 @@ services:
       - ./.container_volumes/redis/data:/data:rw,Z
       - ./.container_volumes/redis/config/redis.conf:/etc/redis.conf:ro,Z
     entrypoint: ["redis-server", "/etc/redis.conf"]
+    networks:
+      - snykey-internal
+    expose:
+      - "6379"
 
   openbao:
     image: "openbao/openbao:latest"
@@ -51,3 +69,7 @@ services:
       - ./.container_volumes/certs/bao:/certs:rw,z
       - ./.container_volumes/certs/ca:/certs/ca:rw,z
     entrypoint: bao server -config /bao/config/config.hcl
+    networks:
+      - snykey-internal
+    expose:
+      - "8200"

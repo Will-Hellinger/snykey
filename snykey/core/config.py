@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     Application settings.
 
     Attributes:
+        API_KEY (str): The API key for authenticating requests.
         OPENBAO_ADDR (str): Address of the OpenBao service, defaults to "http://localhost:8200".
         OPENBAO_TOKEN (str): Token for OpenBao authentication, defaults to "changeme".
         REDIS_HOST (str): Hostname for the Redis service, defaults to "redis".
@@ -16,6 +17,7 @@ class Settings(BaseSettings):
         REDIS_PKCE_EXPIRATION (int): Expiration time in seconds for PKCE data in Redis, defaults to 3600 seconds.
     """
 
+    API_KEY: str = os.getenv("API_KEY")
     OPENBAO_ADDR: str = os.getenv("OPENBAO_ADDR", "http://localhost:8200")
     OPENBAO_TOKEN: str = os.getenv("OPENBAO_TOKEN", "changeme")
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
@@ -28,3 +30,7 @@ class Settings(BaseSettings):
 
 
 settings: Settings = Settings()
+
+EXCLUDED_PATHS: list[str] = (
+    os.getenv("EXCLUDED_PATHS") if os.getenv("EXCLUDED_PATHS") else ""
+).split(",")
