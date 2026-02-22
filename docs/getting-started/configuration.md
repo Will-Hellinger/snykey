@@ -16,6 +16,8 @@ Most configuration is handled via environment variables, typically set in your `
 | `REDIS_PASSWORD`    | Password for Redis                                      | `example_password`      |
 | `REDIS_CACHE_TIME`  | Cache time (in seconds) for Redis tokens                | `3000`                  |
 | `REDIS_PKCE_EXPIRATION`| Cache time (in seconds) for app registration uri to have valid callback | `600`|
+| `EXCLUDED_PATHS`    | Comma seperated endpoints to ignore middleware for      | `/docs,/openapi.json`   |
+| `API_KEY`           | The key required for middleware, uses the header: 'X-API-Key'. To disable, remove the entry | `example_api_key_1234567890` |
 
 You can modify these in your `.env` file or override them in your deployment environment.
 

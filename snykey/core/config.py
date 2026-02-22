@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         REDIS_PKCE_EXPIRATION (int): Expiration time in seconds for PKCE data in Redis, defaults to 3600 seconds.
     """
 
-    API_KEY: str = os.getenv("API_KEY")
+    API_KEY: str = os.getenv("API_KEY", "")
     OPENBAO_ADDR: str = os.getenv("OPENBAO_ADDR", "http://localhost:8200")
     OPENBAO_TOKEN: str = os.getenv("OPENBAO_TOKEN", "changeme")
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
