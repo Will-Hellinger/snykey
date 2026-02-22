@@ -1,3 +1,5 @@
+import os
+
 import core.config
 from api.v1 import endpoints
 
@@ -86,7 +88,7 @@ def custom_openapi() -> dict:
 logger.log(logging.INFO, "Starting Snykey API application.")
 app: FastAPI = FastAPI()
 
-if core.config.settings.API_KEY:
+if core.config.settings.API_KEY and os.getenv("TESTING") != "True":
     logger.info("API Key authentication is enabled.")
 
     app.openapi = custom_openapi

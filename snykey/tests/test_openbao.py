@@ -1,6 +1,7 @@
 import pytest
-from services import openbao
 from unittest.mock import MagicMock, patch
+
+from services import openbao
 
 
 @pytest.fixture

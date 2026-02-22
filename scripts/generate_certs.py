@@ -1,12 +1,12 @@
 import os
 import argparse
+import ipaddress
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509 import DNSName, IPAddress, SubjectAlternativeName
 from datetime import datetime, timedelta, timezone
-import ipaddress
 
 DEFAULT_CERT_DIR: str = ".container_volumes/certs"
 DEFAULT_COUNTRY: str = "US"
@@ -16,18 +16,18 @@ DEFAULT_ORG: str = "OrgName"
 DEFAULT_CA_CN: str = "InternalCA"
 DEFAULT_BAO_CN: str = "openbao"
 DEFAULT_APP_CN: str = "app"
-DEFAULT_BAO_SANS: list[str] = [
+DEFAULT_BAO_SANS: tuple[str] = (
     "DNS:openbao",
     "DNS:localhost",
     "DNS:host.docker.internal",
     "IP:127.0.0.1",
-]
-DEFAULT_APP_SANS: list[str] = [
+)
+DEFAULT_APP_SANS: tuple[str] = (
     "DNS:app",
     "DNS:localhost",
     "DNS:host.docker.internal",
     "IP:127.0.0.1",
-]
+)
 
 
 def parse_args() -> argparse.Namespace:

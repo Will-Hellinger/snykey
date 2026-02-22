@@ -254,6 +254,11 @@ async def register_app(
     scopes_list: list[str] = [s.strip() for s in scopes.split(",")]
     redirect_uris_list: list[str] = [u.strip() for u in redirect_uris.split(",")]
 
+    if len(redirect_uris_list) == 0:
+        return JSONResponse(
+            status_code=400, content={"error": "At least one redirect URI is required"}
+        )
+
     result: dict = {}
 
     try:

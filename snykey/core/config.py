@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
 
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
         os.getenv("REDIS_PKCE_EXPIRATION", 3600)
     )  # in seconds
 
-
+load_dotenv()
 settings: Settings = Settings()
 
 EXCLUDED_PATHS: list[str] = (

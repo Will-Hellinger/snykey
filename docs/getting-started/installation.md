@@ -25,14 +25,21 @@ The setup scripts will:
 Run: `python3 ./scripts/setup.py`
 Run: `python3 ./scripts/genreate_certs.py`
 
-## 4. Start the Stack
+## 4. Set the configuration
+The setup needs an initial configuration .env file. You dont need to know the OPENBAO details just yet.
+
+```bash
+cp .env_example .env
+```
+
+## 5. Start the Stack
 Start all services with Docker Compose:
 
 ```bash
 docker compose up -d --build
 ```
 
-## 5. Initialize and Unseal OpenBao
+## 6. Initialize and Unseal OpenBao
 ### a. Initialize OpenBao (first time only):
 ```bash
 docker exec -it openbao bao operator init -n 1 -t 1
@@ -60,17 +67,17 @@ docker exec -it openbao bao operator unseal $OPENBAO_UNSEAL_KEY
 docker exec -it openbao bao login $OPENBAO_TOKEN
 ```
 
-## 6. Enable the Key-Value Secrets Engine
+## 7. Enable the Key-Value Secrets Engine
 Enable the KV secrets engine (version 2):
 
 ```bash
 docker exec -it openbao bao secrets enable -version=2 kv
 ```
 
-## 7. (Optional) Verify Everything is Running
+## 8. (Optional) Verify Everything is Running
 * Visit `https://localhost:8000/docs` for the API docs.
 * Check logs in .container_volumes/app/logs/ if needed.
 
-## 8. Next Steps
+## 9. Next Steps
 * Use the API to store and retrieve Snyk credentials for your applications.
 * For production, replace the generated certificates with your own trusted certificates.

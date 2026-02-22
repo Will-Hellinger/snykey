@@ -1,8 +1,20 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app
 
-client = TestClient(app)
+from main import app
+from core import config
+
+class APIKeyTestClient(TestClient):
+    def request(self, *args, **kwargs):
+        headers = kwargs.pop("headers", None)
+        if headers is None:
+            headers = {}
+
+        headers.update({"X-API-Key": config.settings.API_KEY})
+
+        return super().request(*args, headers=headers, **kwargs)
+
+client = APIKeyTestClient(app)
 
 
 @pytest.fixture
@@ -84,7 +96,7 @@ def test_store_credentials_success(monkeypatch, store_req):
         async_store_refresh_key,
     )
 
-    response = client.put("/credentials", params=store_req)
+    response = client.put("/v1/credentials", params=store_req)
 
     assert response.status_code == 200
     assert response.json() == {"message": "Credentials stored."}
@@ -107,7 +119,7 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
         async_check_vault_sealed,
     )
 
-    response = client.put("/credentials", params=store_req)
+    response = client.put("/v1/credentials", params=store_req)
 
     assert response.status_code == 503
     assert "Vault is sealed" in response.json()["error"]
@@ -138,7 +150,7 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         async_refresh_snyk_token,
     )
 
-    response = client.put("/credentials", params=store_req)
+    response = client.put("/v1/credentials", params=store_req)
 
     assert response.status_code == 500
     assert "fail" in response.json()["error"]
@@ -161,7 +173,7 @@ def test_get_credentials_from_redis(monkeypatch, get_req):
         async_get_auth_token,
     )
 
-    response = client.get("/credentials", params=get_req)
+    response = client.get("/v1/credentials", params=get_req)
 
     assert response.status_code == 200
     assert response.json() == {"access_token": "token"}
@@ -192,7 +204,7 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
         async_get_refresh_key,
     )
 
-    response = client.get("/credentials", params=get_req)
+    response = client.get("/v1/credentials", params=get_req)
 
     assert response.status_code == 404
 
@@ -230,7 +242,7 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         async_refresh_snyk_token,
     )
 
-    response = client.get("/credentials", params=get_req)
+    response = client.get("/v1/credentials", params=get_req)
 
     assert response.status_code == 500
 
@@ -260,7 +272,7 @@ def test_delete_credentials_success(monkeypatch, delete_req):
         async_delete_refresh_key,
     )
 
-    response = client.delete("/credentials", params=delete_req)
+    response = client.delete("/v1/credentials", params=delete_req)
 
     assert response.status_code == 200
     assert response.json() == {"message": "Credentials deleted."}
@@ -271,7 +283,7 @@ def test_delete_credentials_missing_fields():
     Test deleting Snyk credentials with missing organization ID or client ID.
     """
 
-    response = client.delete("/credentials", params={"org_id": "", "client_id": ""})
+    response = client.delete("/v1/credentials", params={"org_id": "", "client_id": ""})
 
     assert response.status_code == 400
 
@@ -293,7 +305,7 @@ def test_delete_cache_key(monkeypatch, delete_req):
         async_delete_auth_token,
     )
 
-    response = client.delete("/cache", params=delete_req)
+    response = client.delete("/v1/cache", params=delete_req)
 
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
@@ -368,7 +380,7 @@ def test_register_app_success(monkeypatch):
     )
 
     response = client.post(
-        "/register-app",
+        "/v1/register-app",
         params={
             "name": "test_app",
             "scopes": "org.read",
@@ -452,7 +464,7 @@ def test_oauth_callback_success(monkeypatch):
     )
 
     response = client.get(
-        "/callback",
+        "/v1/callback",
         params={
             "code": "auth_code_123",
             "state": "state123",
@@ -483,7 +495,7 @@ def test_oauth_callback_invalid_state(monkeypatch):
     )
 
     response = client.get(
-        "/callback",
+        "/v1/callback",
         params={
             "code": "auth_code_123",
             "state": "invalid_state",
@@ -544,7 +556,7 @@ def test_oauth_callback_exchange_error(monkeypatch):
     )
 
     response = client.get(
-        "/callback",
+        "/v1/callback",
         params={
             "code": "auth_code_123",
             "state": "state123",
