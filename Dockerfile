@@ -1,5 +1,7 @@
 FROM ghcr.io/astral-sh/uv:python3.13-alpine
 
+RUN apk add --no-cache curl
+
 RUN addgroup -g 1001 -S snykey && \
     adduser -u 1001 -S snykey -G snykey
 

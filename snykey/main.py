@@ -2,6 +2,7 @@ import os
 
 import core.config
 from api.v1 import endpoints
+from api import health
 
 import logging
 
@@ -99,3 +100,4 @@ else:
     logger.warning("API Key is not set. The API is running without authentication!")
 
 app.include_router(endpoints.router, prefix="/v1")
+app.include_router(health.router)

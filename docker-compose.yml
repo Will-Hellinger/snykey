@@ -29,6 +29,12 @@ services:
       - ./.container_volumes/app/logs:/snykey/logs:rw,Z
       - ./.container_volumes/certs/app:/snykey/certs:rw,z
       - ./.container_volumes/certs/ca:/snykey/certs/ca:rw,z
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     depends_on:
       - openbao
       - redis

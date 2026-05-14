@@ -52,10 +52,10 @@ async def store_credentials(body: StoreCredentialsBody) -> JSONResponse:
     refresh_key = body.refresh_key.strip()
     instance = body.instance.strip()
 
-    if await openbao.check_vault_sealed():
+    if not await openbao.ensure_vault_unsealed():
         return JSONResponse(
             status_code=503,
-            content={"error": "Vault is sealed, cannot store credentials."},
+            content={"error": "Vault is sealed and could not be unsealed."},
         )
 
     logger.info("Refreshing key to ensure no other process can use it.")
@@ -370,11 +370,13 @@ async def oauth_callback(
         logger.error("Incomplete PKCE data for state: %s", state)
         return JSONResponse(status_code=500, content={"error": "Incomplete PKCE data"})
 
-    if await openbao.check_vault_sealed():
-        logger.error("Vault is sealed, cannot proceed with OAuth callback")
+    if not await openbao.ensure_vault_unsealed():
+        logger.error(
+            "Vault is sealed and could not be unsealed, cannot proceed with OAuth callback"
+        )
         return JSONResponse(
             status_code=503,
-            content={"error": "Vault is sealed, cannot store credentials."},
+            content={"error": "Vault is sealed and could not be unsealed."},
         )
 
     refresh_token: str | None = None

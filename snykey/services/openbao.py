@@ -6,6 +6,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 OPENBAO_ADDR: str = settings.OPENBAO_ADDR
 OPENBAO_TOKEN: str = settings.OPENBAO_TOKEN
+OPENBAO_UNSEAL_KEY: str = settings.OPENBAO_UNSEAL_KEY
 SECRET_MOUNT_POINT: str = "kv"
 
 _ssl_verify: str | bool = settings.OPENBAO_CA_CERT if settings.OPENBAO_CA_CERT else True
@@ -40,6 +41,54 @@ async def check_vault_sealed() -> bool:
     except Exception as e:
         logger.error("Failed to check Vault seal status: %s", str(e))
         raise RuntimeError("Failed to check Vault seal status: %s" % str(e))
+
+
+async def unseal_vault() -> bool:
+    """
+    Attempts to unseal the Vault using the configured unseal key.
+
+    Returns:
+        bool: True if the Vault is unsealed after the attempt, False otherwise.
+    """
+
+    if not OPENBAO_UNSEAL_KEY:
+        logger.error("No unseal key configured, cannot unseal Vault")
+        return False
+
+    url: str = f"{OPENBAO_ADDR}/v1/sys/unseal"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN}
+
+    try:
+        resp: httpx.Response = await http_client.post(
+            url, headers=headers, json={"key": OPENBAO_UNSEAL_KEY}
+        )
+        resp.raise_for_status()
+        data: dict = resp.json()
+
+        sealed: bool = data.get("sealed", True)
+        logger.info("Vault unseal attempt result: sealed=%s", sealed)
+        return not sealed
+    except Exception as e:
+        logger.error("Failed to unseal Vault: %s", str(e))
+        return False
+
+
+async def ensure_vault_unsealed() -> bool:
+    """
+    Checks if the Vault is sealed and attempts to unseal it if so.
+
+    Returns:
+        bool: True if the Vault is unsealed, False if it remains sealed.
+    """
+
+    try:
+        if not await check_vault_sealed():
+            return True
+    except Exception:
+        return False
+
+    logger.info("Vault is sealed, attempting automatic unseal")
+    return await unseal_vault()
 
 
 async def store_refresh_key(org_id: str, client_id: str, refresh_token: str) -> bool:

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     API_KEY: str = os.getenv("API_KEY", "")
     OPENBAO_ADDR: str = os.getenv("OPENBAO_ADDR", "http://localhost:8200")
     OPENBAO_TOKEN: str = os.getenv("OPENBAO_TOKEN", "changeme")
+    OPENBAO_UNSEAL_KEY: str = os.getenv("OPENBAO_UNSEAL_KEY", "")
     OPENBAO_CA_CERT: str = os.getenv("OPENBAO_CA_CERT", "")
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
@@ -41,3 +42,4 @@ EXCLUDED_PATHS: list[str] = (
 ).split(",")
 
 EXCLUDED_PATHS.append("/v1/callback")
+EXCLUDED_PATHS.append("/health")
