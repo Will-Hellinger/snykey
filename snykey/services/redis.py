@@ -1,6 +1,7 @@
 import json
 import logging
 import redis.asyncio as redis
+from redis.typing import ResponseT
 from core.config import settings
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -62,9 +63,6 @@ async def get_auth_token(org_id: str, client_id: str) -> bytes | None:
 
     key: str = format_key(org_id, client_id)
 
-    if not await redis_client.exists(key):
-        return None
-
     return await redis_client.get(key)
 
 
@@ -82,32 +80,12 @@ async def delete_auth_token(org_id: str, client_id: str) -> dict:
 
     key: str = format_key(org_id, client_id)
 
-    if not await redis_client.exists(key):
+    deleted: ResponseT = await redis_client.delete(key)
+
+    if not deleted:
         return {"message": "Auth token not found."}
 
-    await redis_client.delete(key)
-
     return {"message": "Auth token deleted."}
-
-
-async def check_token_age(org_id: str, client_id: str) -> int | None:
-    """
-    Checks the age of the Snyk auth token for the specified org/client in Redis.
-
-    Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-
-    Returns:
-        int | None: The age of the auth token in seconds if found, otherwise None.
-    """
-
-    key: str = format_key(org_id, client_id)
-
-    if not await redis_client.exists(key):
-        return None
-
-    return await redis_client.ttl(key)
 
 
 def format_pkce_key(state: str) -> str:
@@ -131,6 +109,7 @@ async def store_pkce_data(
     client_secret: str,
     redirect_uri: str,
     org_id: str,
+    instance: str = "api.snyk.io",
     code: str | None = None,
     expiration: int = 600,
 ) -> dict:
@@ -144,6 +123,7 @@ async def store_pkce_data(
         client_secret (str): The Snyk app client secret.
         redirect_uri (str): The redirect URI for the OAuth flow.
         org_id (str): The Snyk organization ID.
+        instance (str): Snyk API hostname used during registration.
         code (str | None): Optional authorization code.
         expiration (int): Expiration time in seconds (default: 600 = 10 minutes).
 
@@ -159,6 +139,7 @@ async def store_pkce_data(
         "client_secret": client_secret,
         "redirect_uri": redirect_uri,
         "org_id": org_id,
+        "instance": instance,
         "code": code,
     }
 
@@ -179,9 +160,6 @@ async def get_pkce_data(state: str) -> dict | None:
     """
 
     key: str = format_pkce_key(state)
-
-    if not await redis_client.exists(key):
-        return None
 
     data: bytes | None = await redis_client.get(key)
 
@@ -204,10 +182,10 @@ async def delete_pkce_data(state: str) -> dict:
 
     key: str = format_pkce_key(state)
 
-    if not await redis_client.exists(key):
-        return {"message": "PKCE data not found."}
+    deleted: ResponseT = await redis_client.delete(key)
 
-    await redis_client.delete(key)
+    if not deleted:
+        return {"message": "PKCE data not found."}
 
     return {"message": "PKCE data deleted."}
 

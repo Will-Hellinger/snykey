@@ -40,10 +40,11 @@ nav:
   - Getting Started:
       - Installation: getting-started/installation.md
       - Configuration: getting-started/configuration.md
+  - Guides:
+      - Before and After: guides/before-and-after.md
   - Endpoints:
       - v1: endpoints/v1.md
   - Scripts:
-      - Generating Certificates: scripts/generate-certificates.md
       - Setup: scripts/setup.md
 
 docs_dir: docs

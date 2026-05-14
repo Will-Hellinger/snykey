@@ -17,6 +17,7 @@ services:
     environment:
       - OPENBAO_ADDR=${OPENBAO_ADDR}
       - OPENBAO_TOKEN=${OPENBAO_TOKEN}
+      - OPENBAO_CA_CERT=${OPENBAO_CA_CERT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -38,8 +39,6 @@ services:
   redis:
     image: "redis:latest"
     container_name: redis
-    ports:
-      - "6379:6379"
     volumes:
       - ./.container_volumes/redis/data:/data:rw,Z
       - ./.container_volumes/redis/config/redis.conf:/etc/redis.conf:ro,Z
@@ -52,8 +51,6 @@ services:
   openbao:
     image: "openbao/openbao:latest"
     container_name: openbao
-    ports:
-      - "8200:8200"
     environment:
       - OPENBAO_ENV=development
       - BAO_ADDR=https://127.0.0.1:8200

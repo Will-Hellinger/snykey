@@ -112,7 +112,7 @@ async def test_store_refresh_key_success(org_id: str, client_id: str):
 @pytest.mark.asyncio
 async def test_store_refresh_key_error(org_id: str, client_id: str):
     """
-    Test that store_refresh_key handles errors when storing the Snyk refresh token in OpenBao.
+    Test that store_refresh_key raises when storing the Snyk refresh token fails.
 
     Args:
         org_id (str): The organization ID.
@@ -122,9 +122,8 @@ async def test_store_refresh_key_error(org_id: str, client_id: str):
     with patch.object(
         openbao.http_client, "post", side_effect=Exception("Connection failed")
     ):
-        result = await openbao.store_refresh_key(org_id, client_id, "refresh_token")
-
-        assert result is False
+        with pytest.raises(Exception, match="Connection failed"):
+            await openbao.store_refresh_key(org_id, client_id, "refresh_token")
 
 
 @pytest.mark.asyncio

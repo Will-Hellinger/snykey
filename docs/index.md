@@ -30,11 +30,12 @@ This removes the persistence and secrets management burden from your application
 ## Quick Start
 
 1. **Clone the repository and configure your environment.**
-2. **Run the `setup.sh` script** to prepare directories, configs, and certificates.
-3. **Start the stack** with Docker Compose.
-4. **Initialize and unseal OpenBao** (see [Installation](getting-started/installation.md) for details).
-5. **Enable the KV secrets engine** in OpenBao.
-6. **Use the API** to store and retrieve Snyk credentials for your applications.
+2. **Run the `setup.py` script** to prepare directories and configs.
+3. **Place TLS certificates** in `.container_volumes/certs/`.
+4. **Start the stack** with Docker Compose.
+5. **Initialize and unseal OpenBao** (see [Installation](getting-started/installation.md) for details).
+6. **Enable the KV secrets engine** in OpenBao.
+7. **Use the API** to store and retrieve Snyk credentials for your applications.
 
 ## Documentation Sections
 
@@ -45,11 +46,9 @@ This removes the persistence and secrets management burden from your application
 
 ## Running Tests
 
-To run the test suite:
-
 ```bash
-pip install -r tests/requirements.txt
-pytest snykey/tests
+pip install -r snykey/requirements.txt -r snykey/tests/requirements.txt
+pytest
 ```
 
 ## OpenBao Setup (Summary)

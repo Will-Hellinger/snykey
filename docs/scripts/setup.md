@@ -11,6 +11,8 @@ This Python script automates the initial setup for Snykey. It creates the requir
 * Sets secure permissions on all created directories and files.
 * Provides clear output for each step, making it easy to verify setup progress.
 
+After running the script, place your TLS certificates in the created `.container_volumes/certs/` directories before starting the stack. See [Installation](../getting-started/installation.md) for details.
+
 ## Source
 
 ```python

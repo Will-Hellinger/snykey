@@ -16,7 +16,11 @@ def main():
 
     # Create necessary directories
     dirs: list[str] = [
-        "certs",
+        "certs/ca",
+        "certs/bao",
+        "certs/bao/ca",
+        "certs/app",
+        "certs/app/ca",
         "app/logs",
         "openbao/logs",
         "openbao/data",
@@ -64,7 +68,12 @@ def main():
 
     print("All setup steps completed.")
     print(
-        "You should now run the generate_certs.py script to create the necessary certificates."
+        "Place your TLS certificates in .container_volumes/certs/ before starting the stack.\n"
+        "  certs/ca/ca.crt      — CA certificate (used to verify OpenBao)\n"
+        "  certs/bao/bao.crt    — OpenBao server certificate\n"
+        "  certs/bao/bao.key    — OpenBao server key\n"
+        "  certs/app/app.crt    — App server certificate\n"
+        "  certs/app/app.key    — App server key"
     )
 
 

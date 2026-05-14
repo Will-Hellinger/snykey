@@ -8,8 +8,19 @@ http_client: httpx.AsyncClient = httpx.AsyncClient(
 )
 
 
+def _normalize_instance(instance: str) -> str:
+    instance = instance.strip().rstrip("/")
+    for prefix in ("https://", "http://"):
+        if instance.startswith(prefix):
+            instance = instance[len(prefix) :]
+    return instance
+
+
 async def refresh_snyk_token(
-    client_id: str, client_secret: str, refresh_token: str
+    client_id: str,
+    client_secret: str,
+    refresh_token: str,
+    instance: str = "api.snyk.io",
 ) -> dict:
     """
     Use Snyk OAuth2 endpoint to exchange a refresh token for a new access token and refresh token.
@@ -18,6 +29,7 @@ async def refresh_snyk_token(
         client_id (str): Snyk OAuth2 client ID.
         client_secret (str): Snyk OAuth2 client secret.
         refresh_token (str): The refresh token to exchange.
+        instance (str): Snyk API hostname (e.g. "api.snyk.io", "api.eu.snyk.io").
 
     Returns:
         dict: A dictionary containing the new access token, refresh token, and expiration time.
@@ -26,7 +38,7 @@ async def refresh_snyk_token(
     if not client_id or not client_secret or not refresh_token:
         raise ValueError("client_id, client_secret, and refresh_token must be provided")
 
-    url: str = "https://api.snyk.io/oauth2/token"
+    url: str = f"https://{_normalize_instance(instance)}/oauth2/token"
 
     headers: dict[str, str] = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -58,6 +70,7 @@ async def exchange_code_for_token(
     client_secret: str,
     redirect_uri: str,
     code_verifier: str,
+    instance: str = "api.snyk.io",
 ) -> dict:
     """
     Exchange an authorization code for access and refresh tokens using PKCE.
@@ -68,6 +81,7 @@ async def exchange_code_for_token(
         client_secret (str): Snyk OAuth2 client secret.
         redirect_uri (str): The redirect URI used in the authorization request.
         code_verifier (str): The PKCE code verifier.
+        instance (str): Snyk API hostname (e.g. "api.snyk.io", "api.eu.snyk.io").
 
     Returns:
         dict: A dictionary containing the access token, refresh token, and expiration time.
@@ -82,7 +96,7 @@ async def exchange_code_for_token(
     ):
         raise ValueError("All parameters must be provided")
 
-    url: str = "https://api.snyk.io/oauth2/token"
+    url: str = f"https://{_normalize_instance(instance)}/oauth2/token"
 
     headers: dict[str, str] = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -117,6 +131,7 @@ async def register_snyk_app(
     org_id: str,
     auth_token: str,
     api_version: str = "2024-10-15",
+    instance: str = "api.snyk.io",
 ) -> dict:
     """
     Register a new Snyk app with the specified parameters.
@@ -128,14 +143,14 @@ async def register_snyk_app(
         org_id (str): Snyk organization ID.
         auth_token (str): Snyk API authentication token.
         api_version (str): Snyk API version (default: "2024-10-15").
+        instance (str): Snyk API hostname (e.g. "api.snyk.io", "api.eu.snyk.io").
 
     Returns:
         dict: Response from the Snyk API containing the app registration details.
     """
 
-    url: str = (
-        f"https://api.snyk.io/rest/orgs/{org_id}/apps/creations?version={api_version}"
-    )
+    host: str = _normalize_instance(instance)
+    url: str = f"https://{host}/rest/orgs/{org_id}/apps/creations?version={api_version}"
 
     headers: dict[str, str] = {
         "Authorization": f"token {auth_token}",
@@ -172,9 +187,10 @@ def generate_auth_url(
     client_id: str,
     redirect_uri: str,
     scopes: list[str],
-    state: str = "state123",
-    code_challenge: str = "challenge123",
+    state: str,
+    code_challenge: str,
     code_challenge_method: str = "S256",
+    instance: str = "api.snyk.io",
 ) -> str:
     """
     Generate the Snyk OAuth2 authorization URL.
@@ -186,10 +202,13 @@ def generate_auth_url(
         state (str): State parameter for CSRF protection.
         code_challenge (str): PKCE code challenge.
         code_challenge_method (str): PKCE code challenge method.
+        instance (str): Snyk API hostname (e.g. "api.snyk.io", "api.eu.snyk.io").
 
     Returns:
         str: The complete authorization URL.
     """
+
+    app_instance: str = _normalize_instance(instance).replace("api.", "app.", 1)
 
     params: dict = {
         "response_type": "code",
@@ -201,4 +220,4 @@ def generate_auth_url(
         "code_challenge_method": code_challenge_method,
     }
 
-    return "https://app.snyk.io/oauth2/authorize?" + urllib.parse.urlencode(params)
+    return f"https://{app_instance}/oauth2/authorize?" + urllib.parse.urlencode(params)
