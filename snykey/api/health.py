@@ -31,8 +31,8 @@ async def health() -> JSONResponse:
         healthy = False
 
     try:
-        sealed: bool = await openbao.ensure_vault_unsealed()
-        if sealed:
+        unsealed: bool = await openbao.ensure_vault_unsealed()
+        if not unsealed:
             status["openbao"] = "sealed"
             healthy = False
     except Exception as e:
