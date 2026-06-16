@@ -78,7 +78,7 @@ def exchange_code(code: str, verifier: str) -> dict:
     return resp.json()
 
 
-# You must expose a /callback route, receive the code, call exchange_code(), and handle the persistance yourself.
+# You must expose a /callback route, receive the code, call exchange_code(), and handle the persistence yourself.
 def handle_callback(code: str, verifier: str):
     tokens = exchange_code(code, verifier)
     with open(TOKEN_FILE, "w") as f:
