@@ -1,5 +1,8 @@
+import re
 import httpx
 import urllib.parse
+
+_VALID_SNYK_INSTANCE = r"^api(?:\.[a-z0-9-]+)?\.snyk\.io$"
 
 http_client: httpx.AsyncClient = httpx.AsyncClient(
     verify=True,
@@ -9,10 +12,12 @@ http_client: httpx.AsyncClient = httpx.AsyncClient(
 
 
 def _normalize_instance(instance: str) -> str:
-    instance = instance.strip().rstrip("/")
+    instance = instance.strip().rstrip("/").lower()
     for prefix in ("https://", "http://"):
         if instance.startswith(prefix):
             instance = instance[len(prefix) :]
+    if not re.match(_VALID_SNYK_INSTANCE, instance):
+        raise ValueError("instance must be api.snyk.io or api.<region>.snyk.io")
     return instance
 
 

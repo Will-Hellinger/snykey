@@ -209,3 +209,11 @@ def test_normalize_instance_strips_protocol_and_slash():
     assert snyk._normalize_instance("api.snyk.io/") == "api.snyk.io"
     assert snyk._normalize_instance("api.snyk.io") == "api.snyk.io"
     assert snyk._normalize_instance("https://api.eu.snyk.io/") == "api.eu.snyk.io"
+
+
+def test_normalize_instance_rejects_invalid_host():
+    with pytest.raises(ValueError):
+        snyk._normalize_instance("evil.example.com")
+
+    with pytest.raises(ValueError):
+        snyk._normalize_instance("api.snyk.io.attacker.com")
