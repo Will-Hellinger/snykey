@@ -170,3 +170,7 @@ temp/
 
 # Just for now
 docs/examples/snykey.py
+
+# Ignore private keys and certificates
+*.key
+*.pem

@@ -73,7 +73,6 @@ async def test_get_auth_token_found(mock_redis, org_id: str, client_id: str):
         client_id (str): The client ID.
     """
 
-    mock_redis.exists = AsyncMock(return_value=True)
     mock_redis.get = AsyncMock(return_value=b"token")
     result: bytes | None = await redis_service.get_auth_token(org_id, client_id)
 
@@ -92,7 +91,7 @@ async def test_get_auth_token_not_found(mock_redis, org_id: str, client_id: str)
         client_id (str): The client ID.
     """
 
-    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.get = AsyncMock(return_value=None)
     result: bytes | None = await redis_service.get_auth_token(org_id, client_id)
 
     assert result is None
@@ -110,7 +109,6 @@ async def test_delete_auth_token_found(mock_redis, org_id: str, client_id: str):
         client_id (str): The client ID.
     """
 
-    mock_redis.exists = AsyncMock(return_value=True)
     mock_redis.delete = AsyncMock(return_value=1)
     result: dict = await redis_service.delete_auth_token(org_id, client_id)
     mock_redis.delete.assert_awaited_with("snyk:org1:client1")
@@ -130,47 +128,10 @@ async def test_delete_auth_token_not_found(mock_redis, org_id: str, client_id: s
         client_id (str): The client ID.
     """
 
-    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.delete = AsyncMock(return_value=0)
     result: dict = await redis_service.delete_auth_token(org_id, client_id)
 
     assert result == {"message": "Auth token not found."}
-
-
-@pytest.mark.asyncio
-@patch.object(redis_service, "redis_client")
-async def test_check_token_age_found(mock_redis, org_id: str, client_id: str):
-    """
-    Test checking the age of an auth token in Redis when it exists.
-
-    Args:
-        mock_redis (AsyncMock): Mocked Redis client.
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-    """
-
-    mock_redis.exists = AsyncMock(return_value=True)
-    mock_redis.ttl = AsyncMock(return_value=42)
-    result: int | None = await redis_service.check_token_age(org_id, client_id)
-
-    assert result == 42
-
-
-@pytest.mark.asyncio
-@patch.object(redis_service, "redis_client")
-async def test_check_token_age_not_found(mock_redis, org_id: str, client_id: str):
-    """
-    Test checking the age of an auth token in Redis when it does not exist.
-
-    Args:
-        mock_redis (AsyncMock): Mocked Redis client.
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-    """
-
-    mock_redis.exists = AsyncMock(return_value=False)
-    result: int | None = await redis_service.check_token_age(org_id, client_id)
-
-    assert result is None
 
 
 def test_format_pkce_key():
@@ -234,7 +195,6 @@ async def test_get_pkce_data_found(mock_redis):
         "code": "auth_code",
     }
 
-    mock_redis.exists = AsyncMock(return_value=True)
     mock_redis.get = AsyncMock(return_value=json.dumps(pkce_data).encode())
 
     result: dict | None = await redis_service.get_pkce_data("state123")
@@ -252,7 +212,7 @@ async def test_get_pkce_data_not_found(mock_redis):
         mock_redis (AsyncMock): Mocked Redis client.
     """
 
-    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.get = AsyncMock(return_value=None)
 
     result: dict | None = await redis_service.get_pkce_data("state123")
 
@@ -269,7 +229,6 @@ async def test_delete_pkce_data_found(mock_redis):
         mock_redis (AsyncMock): Mocked Redis client.
     """
 
-    mock_redis.exists = AsyncMock(return_value=True)
     mock_redis.delete = AsyncMock(return_value=1)
 
     result: dict = await redis_service.delete_pkce_data("state123")
@@ -288,7 +247,7 @@ async def test_delete_pkce_data_not_found(mock_redis):
         mock_redis (AsyncMock): Mocked Redis client.
     """
 
-    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.delete = AsyncMock(return_value=0)
 
     result: dict = await redis_service.delete_pkce_data("state123")
 

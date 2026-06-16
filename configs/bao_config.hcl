@@ -14,7 +14,7 @@
     }
   },
   "default_lease_ttl": "168h",
-  "max_lease_ttl": "0h",
+  "max_lease_ttl": "720h",
   "ui": true,
-  "log_level": "Debug"
+  "log_level": "Info"
 }

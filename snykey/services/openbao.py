@@ -6,11 +6,13 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 OPENBAO_ADDR: str = settings.OPENBAO_ADDR
 OPENBAO_TOKEN: str = settings.OPENBAO_TOKEN
+OPENBAO_UNSEAL_KEY: str = settings.OPENBAO_UNSEAL_KEY
 SECRET_MOUNT_POINT: str = "kv"
 
+_ssl_verify: str | bool = settings.OPENBAO_CA_CERT if settings.OPENBAO_CA_CERT else True
 
 http_client: httpx.AsyncClient = httpx.AsyncClient(
-    verify=False,
+    verify=_ssl_verify,
     timeout=30.0,
     limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
 )
@@ -34,11 +36,59 @@ async def check_vault_sealed() -> bool:
         data: dict = resp.json()
 
         sealed = data.get("sealed", True)
-        logger.info(f"Vault seal status check: sealed={sealed}, response={data}")
+        logger.info("Vault seal status check: sealed=%s, response=%s", sealed, data)
         return sealed
     except Exception as e:
-        logger.error(f"Failed to check Vault seal status: {str(e)}")
-        raise RuntimeError(f"Failed to check Vault seal status: {str(e)}")
+        logger.error("Failed to check Vault seal status: %s", str(e))
+        raise RuntimeError("Failed to check Vault seal status: %s" % str(e))
+
+
+async def unseal_vault() -> bool:
+    """
+    Attempts to unseal the Vault using the configured unseal key.
+
+    Returns:
+        bool: True if the Vault is unsealed after the attempt, False otherwise.
+    """
+
+    if not OPENBAO_UNSEAL_KEY:
+        logger.error("No unseal key configured, cannot unseal Vault")
+        return False
+
+    url: str = f"{OPENBAO_ADDR}/v1/sys/unseal"
+    headers: dict[str, str] = {"X-Vault-Token": OPENBAO_TOKEN}
+
+    try:
+        resp: httpx.Response = await http_client.post(
+            url, headers=headers, json={"key": OPENBAO_UNSEAL_KEY}
+        )
+        resp.raise_for_status()
+        data: dict = resp.json()
+
+        sealed: bool = data.get("sealed", True)
+        logger.info("Vault unseal attempt result: sealed=%s", sealed)
+        return not sealed
+    except Exception as e:
+        logger.error("Failed to unseal Vault: %s", str(e))
+        return False
+
+
+async def ensure_vault_unsealed() -> bool:
+    """
+    Checks if the Vault is sealed and attempts to unseal it if so.
+
+    Returns:
+        bool: True if the Vault is unsealed, False if it remains sealed.
+    """
+
+    try:
+        if not await check_vault_sealed():
+            return True
+    except Exception:
+        return False
+
+    logger.info("Vault is sealed, attempting automatic unseal")
+    return await unseal_vault()
 
 
 async def store_refresh_key(org_id: str, client_id: str, refresh_token: str) -> bool:
@@ -51,7 +101,10 @@ async def store_refresh_key(org_id: str, client_id: str, refresh_token: str) -> 
         refresh_token: Refresh token from Snyk
 
     Returns:
-        bool: True if successful, False otherwise.
+        bool: True if successful.
+
+    Raises:
+        Exception: If the request to OpenBao fails.
     """
 
     url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
@@ -68,9 +121,12 @@ async def store_refresh_key(org_id: str, client_id: str, refresh_token: str) -> 
         return True
     except Exception as e:
         logger.error(
-            f"Failed to store refresh key for org {org_id}, client {client_id}: {str(e)}"
+            "Failed to store refresh key for org %s, client %s: %s",
+            org_id,
+            client_id,
+            str(e),
         )
-        return False
+        raise
 
 
 async def get_refresh_key(org_id: str, client_id: str) -> str | None:
@@ -123,7 +179,10 @@ async def delete_refresh_key(org_id: str, client_id: str) -> dict:
         return {"message": "Refresh key deleted."}
     except Exception as e:
         logger.error(
-            f"Failed to delete refresh key for org {org_id}, client {client_id}: {str(e)}"
+            "Failed to delete refresh key for org %s, client %s: %s",
+            org_id,
+            client_id,
+            str(e),
         )
         return {"error": f"Failed to delete refresh key: {str(e)}"}
 
@@ -139,6 +198,9 @@ async def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> d
 
     Returns:
         dict: A confirmation message indicating the refresh key was updated.
+
+    Raises:
+        Exception: If the request to OpenBao fails.
     """
 
     url: str = f"{OPENBAO_ADDR}/v1/{SECRET_MOUNT_POINT}/data/snyk/{org_id}/{client_id}"
@@ -155,6 +217,9 @@ async def update_refresh_key(org_id: str, client_id: str, refresh_key: str) -> d
         return {"message": "Refresh key updated."}
     except Exception as e:
         logger.error(
-            f"Failed to update refresh key for org {org_id}, client {client_id}: {str(e)}"
+            "Failed to update refresh key for org %s, client %s: %s",
+            org_id,
+            client_id,
+            str(e),
         )
-        return {"error": f"Failed to update refresh key: {str(e)}"}
+        raise

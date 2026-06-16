@@ -1,6 +1,7 @@
 from logging import getLogger, Logger
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from services import openbao, snyk, redis, oauth
 from core.config import settings
 
@@ -9,38 +10,58 @@ logger: Logger = getLogger(__name__)
 router: APIRouter = APIRouter()
 
 
+class StoreCredentialsBody(BaseModel):
+    org_id: str
+    client_id: str
+    client_secret: str
+    refresh_key: str
+    instance: str = "api.snyk.io"
+
+
+class GetCredentialsBody(BaseModel):
+    org_id: str
+    client_id: str
+    client_secret: str
+    instance: str = "api.snyk.io"
+
+
+class RegisterAppBody(BaseModel):
+    name: str
+    scopes: str
+    redirect_uris: str
+    org_id: str
+    auth_token: str
+    instance: str = "api.snyk.io"
+
+
 @router.put("/credentials")
-async def store_credentials(
-    org_id: str, client_id: str, client_secret: str, refresh_key: str
-) -> JSONResponse:
+async def store_credentials(body: StoreCredentialsBody) -> JSONResponse:
     """
     Store Snyk credentials in OpenBao.
 
     Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
-        client_secret (str): The client secret.
-        refresh_key (str): The refresh key.
+        body (StoreCredentialsBody): Request body containing org_id, client_id, client_secret, and refresh_key.
 
     Returns:
         JSONResponse: A response indicating success or failure.
     """
 
-    org_id = org_id.strip()
-    client_id = client_id.strip()
-    client_secret = client_secret.strip()
-    refresh_key = refresh_key.strip()
+    org_id = body.org_id.strip()
+    client_id = body.client_id.strip()
+    client_secret = body.client_secret.strip()
+    refresh_key = body.refresh_key.strip()
+    instance = body.instance.strip()
 
-    if await openbao.check_vault_sealed():
+    if not await openbao.ensure_vault_unsealed():
         return JSONResponse(
             status_code=503,
-            content={"error": "Vault is sealed, cannot store credentials."},
+            content={"error": "Vault is sealed and could not be unsealed."},
         )
 
     logger.info("Refreshing key to ensure no other process can use it.")
     try:
         result: dict = await snyk.refresh_snyk_token(
-            client_id, client_secret, refresh_key
+            client_id, client_secret, refresh_key, instance
         )
 
         logger.info(
@@ -57,24 +78,22 @@ async def store_credentials(
     return JSONResponse(content={"message": "Credentials stored."})
 
 
-@router.get("/credentials")
-async def get_credentials(
-    org_id: str, client_id: str, client_secret: str
-) -> JSONResponse:
+@router.post("/credentials")
+async def get_credentials(body: GetCredentialsBody) -> JSONResponse:
     """
     Gather Snyk credentials using the provided org_id and client_id.
 
     Args:
-        org_id (str): The organization ID.
-        client_id (str): The client ID.
+        body (GetCredentialsBody): Request body containing org_id, client_id, and client_secret.
 
     Returns:
         JSONResponse: A response containing the gathered credentials or an error message.
     """
 
-    org_id = org_id.strip()
-    client_id = client_id.strip()
-    client_secret = client_secret.strip()
+    org_id = body.org_id.strip()
+    client_id = body.client_id.strip()
+    client_secret = body.client_secret.strip()
+    instance = body.instance.strip()
 
     # Check if auth token exists in Redis
     logger.info(
@@ -122,7 +141,7 @@ async def get_credentials(
 
     try:
         result: dict = await snyk.refresh_snyk_token(
-            client_id, client_secret, refresh_key
+            client_id, client_secret, refresh_key, instance
         )
 
         logger.info(
@@ -209,22 +228,12 @@ async def delete_cache_key(org_id: str, client_id: str) -> JSONResponse:
 
 
 @router.post("/register-app")
-async def register_app(
-    name: str,
-    scopes: str,
-    redirect_uris: str,
-    org_id: str,
-    auth_token: str,
-) -> JSONResponse:
+async def register_app(body: RegisterAppBody) -> JSONResponse:
     """
     Register a new Snyk app with the specified parameters.
 
     Args:
-        name (str): Name of the Snyk app.
-        scopes (str): Comma-separated list of scopes for the Snyk app.
-        redirect_uris (str): Comma-separated list of redirect URIs for the Snyk app. The first one is assumed for storing PKCE data.
-        org_id (str): Snyk organization ID (stored in PKCE data for callback).
-        auth_token (str): Snyk authentication token.
+        body (RegisterAppBody): Request body containing name, scopes, redirect_uris, org_id, and auth_token.
 
     Returns:
         JSONResponse: A response containing the registered app details or an error message.
@@ -247,14 +256,17 @@ async def register_app(
         logger.error("Failed to generate OAuth parameters: %s", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-    org_id = org_id.strip()
-    auth_token = auth_token.strip()
-    name = name.strip()
+    org_id = body.org_id.strip()
+    auth_token = body.auth_token.strip()
+    name = body.name.strip()
+    instance = body.instance.strip()
 
-    scopes_list: list[str] = [s.strip() for s in scopes.split(",")]
-    redirect_uris_list: list[str] = [u.strip() for u in redirect_uris.split(",")]
+    scopes_list: list[str] = [s.strip() for s in body.scopes.split(",")]
+    redirect_uris_list: list[str] = [
+        u.strip() for u in body.redirect_uris.split(",") if u.strip()
+    ]
 
-    if len(redirect_uris_list) == 0:
+    if not redirect_uris_list:
         return JSONResponse(
             status_code=400, content={"error": "At least one redirect URI is required"}
         )
@@ -263,7 +275,7 @@ async def register_app(
 
     try:
         result = await snyk.register_snyk_app(
-            name, scopes_list, redirect_uris_list, org_id, auth_token
+            name, scopes_list, redirect_uris_list, org_id, auth_token, instance=instance
         )
     except Exception as e:
         logger.error("Failed to register Snyk app: %s", e)
@@ -292,6 +304,7 @@ async def register_app(
             state=state,
             code_challenge=code_challenge,
             code_challenge_method="S256",
+            instance=instance,
         )
 
         auth_urls[uri] = auth_url
@@ -303,10 +316,9 @@ async def register_app(
         code_verifier=code_verifier,
         client_id=client_id,
         client_secret=client_secret,
-        redirect_uri=redirect_uris_list[
-            0
-        ],  # Assuming the first redirect URI is used for storing
+        redirect_uri=redirect_uris_list[0],
         org_id=org_id,
+        instance=instance,
         expiration=settings.REDIS_PKCE_EXPIRATION,
     )
 
@@ -317,7 +329,9 @@ async def register_app(
 async def oauth_callback(
     code: str = Query(..., description="Authorization code from Snyk"),
     state: str = Query(..., description="State parameter for CSRF protection"),
-    instance: str = Query(default="api.snyk.io", description="Snyk instance"),
+    instance: str = Query(
+        default="api.snyk.io", description="Snyk API hostname (e.g. api.eu.snyk.io)"
+    ),
 ) -> JSONResponse:
     """
     OAuth callback endpoint to handle the authorization code flow.
@@ -328,7 +342,7 @@ async def oauth_callback(
     Args:
         code (str): The authorization code from Snyk.
         state (str): The state parameter for CSRF protection.
-        instance (str): The Snyk instance (default: api.snyk.io).
+        instance (str): Snyk API hostname. Overridden by the value stored in PKCE data if present.
 
     Returns:
         JSONResponse: A response indicating success or failure.
@@ -350,16 +364,19 @@ async def oauth_callback(
     client_secret: str = pkce_data.get("client_secret")
     redirect_uri: str = pkce_data.get("redirect_uri")
     org_id: str = pkce_data.get("org_id").strip()
+    instance = pkce_data.get("instance", instance).strip()
 
     if not all([code_verifier, client_id, client_secret, redirect_uri, org_id]):
         logger.error("Incomplete PKCE data for state: %s", state)
         return JSONResponse(status_code=500, content={"error": "Incomplete PKCE data"})
 
-    if await openbao.check_vault_sealed():
-        logger.error("Vault is sealed, cannot proceed with OAuth callback")
+    if not await openbao.ensure_vault_unsealed():
+        logger.error(
+            "Vault is sealed and could not be unsealed, cannot proceed with OAuth callback"
+        )
         return JSONResponse(
             status_code=503,
-            content={"error": "Vault is sealed, cannot store credentials."},
+            content={"error": "Vault is sealed and could not be unsealed."},
         )
 
     refresh_token: str | None = None
@@ -374,6 +391,7 @@ async def oauth_callback(
             client_secret=client_secret,
             redirect_uri=redirect_uri,
             code_verifier=code_verifier,
+            instance=instance,
         )
 
         refresh_token = token_response.get("refresh_token")

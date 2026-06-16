@@ -17,6 +17,7 @@ services:
     environment:
       - OPENBAO_ADDR=${OPENBAO_ADDR}
       - OPENBAO_TOKEN=${OPENBAO_TOKEN}
+      - OPENBAO_CA_CERT=${OPENBAO_CA_CERT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -28,6 +29,12 @@ services:
       - ./.container_volumes/app/logs:/snykey/logs:rw,Z
       - ./.container_volumes/certs/app:/snykey/certs:rw,z
       - ./.container_volumes/certs/ca:/snykey/certs/ca:rw,z
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     depends_on:
       - openbao
       - redis
@@ -38,8 +45,6 @@ services:
   redis:
     image: "redis:latest"
     container_name: redis
-    ports:
-      - "6379:6379"
     volumes:
       - ./.container_volumes/redis/data:/data:rw,Z
       - ./.container_volumes/redis/config/redis.conf:/etc/redis.conf:ro,Z
@@ -52,8 +57,6 @@ services:
   openbao:
     image: "openbao/openbao:latest"
     container_name: openbao
-    ports:
-      - "8200:8200"
     environment:
       - OPENBAO_ENV=development
       - BAO_ADDR=https://127.0.0.1:8200

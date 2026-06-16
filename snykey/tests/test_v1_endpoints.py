@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from main import app
 from core import config
 
+
 class APIKeyTestClient(TestClient):
     def request(self, *args, **kwargs):
         headers = kwargs.pop("headers", None)
@@ -13,6 +14,7 @@ class APIKeyTestClient(TestClient):
         headers.update({"X-API-Key": config.settings.API_KEY})
 
         return super().request(*args, headers=headers, **kwargs)
+
 
 client = APIKeyTestClient(app)
 
@@ -40,7 +42,7 @@ def get_req() -> dict:
     Fixture for getting credentials request.
 
     Returns:
-        dict: A dictionary containing organization ID and client ID.
+        dict: A dictionary containing organization ID, client ID, and client secret.
     """
 
     return {"org_id": "org1", "client_id": "client1", "client_secret": "secret1"}
@@ -76,7 +78,7 @@ def test_store_credentials_success(monkeypatch, store_req):
         async_check_vault_sealed,
     )
 
-    async def async_refresh_snyk_token(cid, cs, rk):
+    async def async_refresh_snyk_token(cid, cs, rk, instance):
         return {
             "access_token": "token",
             "refresh_token": "refresh",
@@ -96,7 +98,7 @@ def test_store_credentials_success(monkeypatch, store_req):
         async_store_refresh_key,
     )
 
-    response = client.put("/v1/credentials", params=store_req)
+    response = client.put("/v1/credentials", json=store_req)
 
     assert response.status_code == 200
     assert response.json() == {"message": "Credentials stored."}
@@ -119,7 +121,7 @@ def test_store_credentials_vault_sealed(monkeypatch, store_req):
         async_check_vault_sealed,
     )
 
-    response = client.put("/v1/credentials", params=store_req)
+    response = client.put("/v1/credentials", json=store_req)
 
     assert response.status_code == 503
     assert "Vault is sealed" in response.json()["error"]
@@ -142,7 +144,7 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         async_check_vault_sealed,
     )
 
-    async def async_refresh_snyk_token(cid, cs, rk):
+    async def async_refresh_snyk_token(cid, cs, rk, instance):
         raise Exception("fail")
 
     monkeypatch.setattr(
@@ -150,7 +152,7 @@ def test_store_credentials_refresh_error(monkeypatch, store_req):
         async_refresh_snyk_token,
     )
 
-    response = client.put("/v1/credentials", params=store_req)
+    response = client.put("/v1/credentials", json=store_req)
 
     assert response.status_code == 500
     assert "fail" in response.json()["error"]
@@ -173,7 +175,7 @@ def test_get_credentials_from_redis(monkeypatch, get_req):
         async_get_auth_token,
     )
 
-    response = client.get("/v1/credentials", params=get_req)
+    response = client.post("/v1/credentials", json=get_req)
 
     assert response.status_code == 200
     assert response.json() == {"access_token": "token"}
@@ -204,7 +206,7 @@ def test_get_credentials_no_refresh_key(monkeypatch, get_req):
         async_get_refresh_key,
     )
 
-    response = client.get("/v1/credentials", params=get_req)
+    response = client.post("/v1/credentials", json=get_req)
 
     assert response.status_code == 404
 
@@ -234,7 +236,7 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         async_get_refresh_key,
     )
 
-    async def async_refresh_snyk_token(cid, cs, rk):
+    async def async_refresh_snyk_token(cid, cs, rk, instance):
         raise Exception("fail")
 
     monkeypatch.setattr(
@@ -242,7 +244,7 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         async_refresh_snyk_token,
     )
 
-    response = client.get("/v1/credentials", params=get_req)
+    response = client.post("/v1/credentials", json=get_req)
 
     assert response.status_code == 500
 
@@ -351,7 +353,7 @@ def test_register_app_success(monkeypatch):
         async_generate_state,
     )
 
-    async def async_register_snyk_app(name, scopes, uris, org, token):
+    async def async_register_snyk_app(name, scopes, uris, org, token, instance):
         return {
             "data": {
                 "attributes": {"client_id": "client123", "client_secret": "secret123"}
@@ -381,7 +383,7 @@ def test_register_app_success(monkeypatch):
 
     response = client.post(
         "/v1/register-app",
-        params={
+        json={
             "name": "test_app",
             "scopes": "org.read",
             "redirect_uris": "https://example.com/callback",
@@ -410,6 +412,7 @@ def test_oauth_callback_success(monkeypatch):
             "client_secret": "secret123",
             "redirect_uri": "https://example.com/callback",
             "org_id": "org123",
+            "instance": "api.snyk.io",
         }
 
     monkeypatch.setattr(
@@ -426,7 +429,7 @@ def test_oauth_callback_success(monkeypatch):
     )
 
     async def async_exchange_code_for_token(
-        code, client_id, client_secret, redirect_uri, code_verifier
+        code, client_id, client_secret, redirect_uri, code_verifier, instance
     ):
         return {
             "access_token": "access123",
@@ -522,6 +525,7 @@ def test_oauth_callback_exchange_error(monkeypatch):
             "client_secret": "secret123",
             "redirect_uri": "https://example.com/callback",
             "org_id": "org123",
+            "instance": "api.snyk.io",
         }
 
     monkeypatch.setattr(
@@ -538,7 +542,7 @@ def test_oauth_callback_exchange_error(monkeypatch):
     )
 
     async def async_exchange_code_for_token(
-        code, client_id, client_secret, redirect_uri, code_verifier
+        code, client_id, client_secret, redirect_uri, code_verifier, instance
     ):
         raise Exception("Exchange failed")
 

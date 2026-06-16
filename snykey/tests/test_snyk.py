@@ -180,3 +180,40 @@ def test_generate_auth_url():
     assert "code_challenge=challenge123" in url
     assert "code_challenge_method=S256" in url
     assert "response_type=code" in url
+
+
+def test_generate_auth_url_eu_instance():
+    """
+    Test that generate_auth_url uses the correct app hostname for regional instances.
+    """
+
+    url: str = snyk.generate_auth_url(
+        client_id="client123",
+        redirect_uri="https://example.com/callback",
+        scopes=["org.read"],
+        state="state123",
+        code_challenge="challenge123",
+        instance="api.eu.snyk.io",
+    )
+
+    assert "https://app.eu.snyk.io/oauth2/authorize?" in url
+
+
+def test_normalize_instance_strips_protocol_and_slash():
+    """
+    Test that _normalize_instance strips https://, http://, and trailing slashes.
+    """
+
+    assert snyk._normalize_instance("https://api.snyk.io/") == "api.snyk.io"
+    assert snyk._normalize_instance("http://api.snyk.io") == "api.snyk.io"
+    assert snyk._normalize_instance("api.snyk.io/") == "api.snyk.io"
+    assert snyk._normalize_instance("api.snyk.io") == "api.snyk.io"
+    assert snyk._normalize_instance("https://api.eu.snyk.io/") == "api.eu.snyk.io"
+
+
+def test_normalize_instance_rejects_invalid_host():
+    with pytest.raises(ValueError):
+        snyk._normalize_instance("evil.example.com")
+
+    with pytest.raises(ValueError):
+        snyk._normalize_instance("api.snyk.io.attacker.com")
