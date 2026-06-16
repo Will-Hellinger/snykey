@@ -99,7 +99,7 @@ docker exec -it openbao bao login $OPENBAO_TOKEN
 docker exec -it openbao bao secrets enable -version=2 kv
 ```
 
-(if that doesnt work try this: `docker exec -it openbao sh -c 'unset BAO_TOKEN && bao secrets enable -version=2 kv'`)
+(If that doesn't work, try: `docker exec -it openbao sh -c 'unset BAO_TOKEN && bao secrets enable -version=2 kv'`)
 
 ## 8. (Optional) Verify Everything is Running
 
