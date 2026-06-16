@@ -236,7 +236,7 @@ def test_get_credentials_refresh_error(monkeypatch, get_req):
         async_get_refresh_key,
     )
 
-    async def async_refresh_snyk_token(cid, cs, rk):
+    async def async_refresh_snyk_token(cid, cs, rk, instance):
         raise Exception("fail")
 
     monkeypatch.setattr(
