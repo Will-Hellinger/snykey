@@ -1,6 +1,6 @@
 # Before and After: Snykey vs. Standard App Management
 
-## An Example Secnario
+## An Example Scenario
 
 You have a Python service that periodically calls the Snyk API to list vulnerabilities for a project. It needs a valid Snyk access token to make that call.
 
